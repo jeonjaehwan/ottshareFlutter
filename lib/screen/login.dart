@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
+import '../api/google_signin_api.dart';
 import '../models/userInfo.dart';
 
 class LoginPage extends StatefulWidget {
@@ -169,32 +172,18 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ],
               ),
-              SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SocialButton(
-                    text: '구글',
-                    onPressed: () {
-                      _loginWithGoogle();
-                    },
-                  ),
-                  SizedBox(width: 12),
-                  SocialButton(
-                    text: '네이버',
-                    onPressed: () {
-                      _loginWithNaver();
-                    },
-                  ),
-                  SizedBox(width: 12),
-                  SocialButton(
-                    text: '페이스북',
-                    onPressed: () {
-                      _loginWithFacebook();
-                    },
-                  ),
+                children: <Widget>[
+                  _getGoogleLoginButton(context),
                 ],
               ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  _getKakaoLoginButton(context)
+                ],
+              )
             ],
           ),
         ),
@@ -202,17 +191,212 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _loginWithGoogle() async {
-    // 구글 로그인 버튼을 눌렀을 때 SampleScreen 페이지로 이동
-  }
-  void _loginWithNaver() {
-    print('네이버 소셜 로그인 버튼을 눌렀습니다.');
+  Widget _getGoogleLoginButton(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        _loginWithGoogle(context);
+      },
+      child: Card(
+        margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+        elevation: 2,
+        child: Container(
+          height: 45,
+          decoration: BoxDecoration(
+            color: Colors.white24,
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Image.asset('assets/google_login.png', height: 40),
+            const SizedBox(
+              width: 110,
+            ),
+          ],),
+        ),
+      ),
+    );
   }
 
-  void _loginWithFacebook() {
-    print('페이스북 소셜 로그인 버튼을 눌렀습니다.');
+
+  Widget _getKakaoLoginButton(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        _loginWithKakao(context);
+      },
+      child: Card(
+        margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+        elevation: 2,
+        child: Container(
+          height: 45,
+          decoration: BoxDecoration(
+            color: Colors.yellow,
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Image.asset('assets/kakao_login.png', height: 40),
+            const SizedBox(
+              width: 30,
+            ),
+          ],),
+        ),
+      ),
+    );
+  }
+
+
+  Future<void> _loginWithGoogle(BuildContext context) async {
+    final user = await GoogleSignInApi.login();
+
+    if (user == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('로그인에 실패했습니다.')));
+    } else {
+      // 회원 정보 추출
+      print('구글 사용자 정보 요청 성공'
+          '\n회원번호: ${user.id}'
+          '\n닉네임: ${user.displayName}'
+          '\n이메일: ${user.email}');
+
+      // 서버에 회원 정보 전송
+
+      // 메인페이지로 이동
+      // navigateToMainPage(context);
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('로그인 성공'),
+            content: Text('로그인이 성공적으로 완료되었습니다.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // 다이얼로그 닫기
+                  Navigator.pop(context, {'isLoggedIn': true}); // 로그인 페이지 닫고 성공 여부 반환
+                },
+                child: Text('확인'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _loginWithKakao(BuildContext context) async {
+    // 키 해시값 확인
+    print(await KakaoSdk.origin);
+
+    if (await isKakaoTalkInstalled()) {
+      try {
+        await UserApi.instance.loginWithKakaoTalk().then((value) async {
+
+          // 회원 정보 추출
+          User user = await UserApi.instance.me();
+          print('카카오 사용자 정보 요청 성공'
+              '\n회원번호: ${user.id}'
+              '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
+              '\n이메일: ${user.kakaoAccount?.email}');
+
+          // 서버에 회원 정보 전송
+
+          // 메인페이지로 이동
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('로그인 성공'),
+                content: Text('로그인이 성공적으로 완료되었습니다.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context); // 다이얼로그 닫기
+                      Navigator.pop(context, {'isLoggedIn': true}); // 로그인 페이지 닫고 성공 여부 반환
+                    },
+                    child: Text('확인'),
+                  ),
+                ],
+              );
+            },
+          );
+        });
+      } catch (error) {
+        print('카카오톡으로 로그인 실패 $error');
+
+        // 사용자가 카카오톡 설치 후 디바이스 권한 요청 화면에서 로그인을 취소한 경우,
+        // 의도적인 로그인 취소로 보고 카카오계정으로 로그인 시도 없이 로그인 취소로 처리 (예: 뒤로 가기)
+        if (error is PlatformException && error.code == 'CANCELED') {
+          return;
+        }
+        // 카카오톡에 연결된 카카오계정이 없는 경우, 카카오계정으로 로그인
+        try {
+          await UserApi.instance.loginWithKakaoAccount().then((value) async {
+
+            User user = await UserApi.instance.me();
+            print('카카오 사용자 정보 요청 성공'
+                '\n회원번호: ${user.id}'
+                '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
+                '\n이메일: ${user.kakaoAccount?.email}');
+
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('로그인 성공'),
+                  content: Text('로그인이 성공적으로 완료되었습니다.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context); // 다이얼로그 닫기
+                        Navigator.pop(context, {'isLoggedIn': true}); // 로그인 페이지 닫고 성공 여부 반환
+                      },
+                      child: Text('확인'),
+                    ),
+                  ],
+                );
+              },
+            );
+          });
+        } catch (error) {
+          print('카카오계정으로 로그인 실패 $error');
+        }
+      }
+    } else {
+      try {
+        await UserApi.instance.loginWithKakaoAccount().then((value) async {
+
+          User user = await UserApi.instance.me();
+          print('카카오 사용자 정보 요청 성공'
+              '\n회원번호: ${user.id}'
+              '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
+              '\n이메일: ${user.kakaoAccount?.email}');
+
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('로그인 성공'),
+                content: Text('로그인이 성공적으로 완료되었습니다.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context); // 다이얼로그 닫기
+                      Navigator.pop(context, {'isLoggedIn': true}); // 로그인 페이지 닫고 성공 여부 반환
+                    },
+                    child: Text('확인'),
+                  ),
+                ],
+              );
+            },
+          );
+        });
+      } catch (error) {
+        print('카카오계정으로 로그인 실패 $error');
+      }
+    }
   }
 }
+
 
 class SocialButton extends StatelessWidget {
   final String text;
