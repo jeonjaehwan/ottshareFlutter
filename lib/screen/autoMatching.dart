@@ -6,16 +6,16 @@ import 'package:http/http.dart' as http;
 import '../models/userInfo.dart';
 
 
-class HomePage extends StatefulWidget {
+class AutoMatchingPage extends StatefulWidget {
   final UserInfo? userInfo; // 선택적 매개변수로 변경
 
-  HomePage({Key? key, this.userInfo}) : super(key: key); // `required` 제거
+  AutoMatchingPage({Key? key, this.userInfo}) : super(key: key); // `required` 제거
 
   @override
-  _HomePageState createState() => _HomePageState();
+  _AutoMatchingPageState createState() => _AutoMatchingPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
   late UserInfo? userInfo;
 
@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     userInfo = widget.userInfo; // null일 수 있음
   }
+
 
   // 자동매칭 요청 함수
   Future<void> sendAutoMatchingRequest() async {
@@ -79,48 +80,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  int _selectedIndex = 0; // 현재 선택된 인덱스
   int? selectedOttIndex; // 선택된 OTT의 인덱스를 추적하는 변수
-  bool isLoggedIn = false; // 로그인 상태
   bool? isLeader; // 방장이 선택되었는지 여부를 나타내는 상태
-
-  void _onItemTapped(int index) async {
-    // '로그인/로그아웃' 버튼을 탭했을 때의 로직
-    if (index == 3) { // 로그인/로그아웃 탭 인덱스, 필요에 따라 조정하세요.
-      if (!isLoggedIn) {
-        // 로그인 페이지로 이동하고 결과를 기다립니다.
-        final result = await Navigator.pushNamed(context, '/users/login');
-        // 로그인 페이지에서 반환된 결과를 기반으로 상태를 업데이트합니다.
-        if (result is Map<String, dynamic>) {
-          setState(() {
-            isLoggedIn = result['isLoggedIn'] ?? false;
-            userInfo = result['userInfo'] as UserInfo?;
-          });
-        }
-      } else {
-        // 로그아웃 로직
-        await logout();
-      }
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
-  }
-
-  Future<void> logout() async {
-    final url = Uri.parse('http://10.0.2.2:8080/api/users/logout');
-    final response = await http.post(url);
-
-    if (response.statusCode == 200) {
-      print('로그아웃 성공');
-      setState(() {
-        isLoggedIn = false;
-      });
-    } else {
-      print('로그아웃 실패: ${response.body}');
-    }
-  }
 
 
   void _onOttTapped(int index) {
@@ -149,12 +110,6 @@ class _HomePageState extends State<HomePage> {
     String subscriptionText = _calculateSubscription();
     bool hasSelectedService = selectedOttIndex != null;
 
-    List<BottomNavigationBarItem> bottomItems = [
-      BottomNavigationBarItem(icon: Icon(Icons.share), label: '계정공유'),
-      BottomNavigationBarItem(icon: Icon(Icons.movie_filter), label: 'OTT 추천'),
-      BottomNavigationBarItem(icon: Icon(Icons.chat), label: '채팅방 기록'),
-      BottomNavigationBarItem(icon: isLoggedIn ? Icon(Icons.person) : Icon(Icons.login), label: isLoggedIn ? '로그아웃' : '로그인'),
-    ];
 
     Widget ottBox(String assetName, String label, int index) {
       bool isSelected = selectedOttIndex == index;
@@ -256,7 +211,7 @@ class _HomePageState extends State<HomePage> {
             ElevatedButton(
               onPressed: sendAutoMatchingRequest, // 자동매칭 버튼 클릭 시 함수 호출
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.yellow,
+                backgroundColor: Color(0xffffdf24),
                 foregroundColor: Colors.black,
                 minimumSize: Size(double.infinity, 60),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -265,12 +220,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: bottomItems,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
       ),
     );
   }
