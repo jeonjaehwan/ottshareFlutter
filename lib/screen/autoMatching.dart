@@ -43,7 +43,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
         ottTypeString = 'TVING';
         break;
       case 2:
-        ottTypeString = 'DISNEY_PLUS';
+        ottTypeString = 'WAVVE';
         break;
       default:
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid OTT selection')));

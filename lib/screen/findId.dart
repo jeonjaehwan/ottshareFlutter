@@ -41,7 +41,7 @@ class _FindIdPageState extends State<FindIdPage> {
           builder: (BuildContext context) {
             return AlertDialog(
               title: Text('인증번호 전송 성공'),
-              content: Text('인증번호가 성공적으로 완료되었습니다.'),
+              content: Text('인증번호가 성공적으로 전송되었습니다.'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -132,6 +132,7 @@ class _FindIdPageState extends State<FindIdPage> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
+                    Navigator.pop(context);
                   },
                   child: Text('확인'),
                 ),
@@ -144,7 +145,7 @@ class _FindIdPageState extends State<FindIdPage> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('인증번호 아닙니다'),
+              title: Text('인증번호가 틀렸습니다.'),
               actions: [
                 TextButton(
                   onPressed: () {

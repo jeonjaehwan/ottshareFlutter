@@ -51,6 +51,7 @@ class _FindPasswordPageState extends State<FindPasswordPage> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
+                    Navigator.pop(context);
                   },
                   child: Text('확인'),
                 ),
