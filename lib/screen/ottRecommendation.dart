@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 
-import '../main.dart';
 import '../models/userInfo.dart';
-import 'autoMatching.dart';
 
 class OttRecommendationPage extends StatefulWidget {
   OttRecommendationPage({Key? key}) : super(key: key);
@@ -25,13 +23,6 @@ class _OttRecommendationPageState extends State<OttRecommendationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          // automaticallyImplyLeading: false,
-          title: Text('OTT 추천'),
-          bottom: PreferredSize(
-              preferredSize: Size.fromHeight(1.0),
-              child: Divider(height: 1.0, color: Colors.black)),
-        ),
         body: Column(
           children: [
             Container(height: 150),

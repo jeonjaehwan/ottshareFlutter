@@ -148,10 +148,6 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('OTT 공유'),
-        bottom: PreferredSize(preferredSize: Size.fromHeight(1.0), child: Divider(height: 1.0, color: Colors.black)),
-      ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),
         child: Column(
