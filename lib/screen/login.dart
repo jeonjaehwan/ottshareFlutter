@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
-import 'package:ott_share/main.dart';
 
 import '../api/google_signin_api.dart';
 import '../models/userInfo.dart';
@@ -61,9 +60,10 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     Navigator.pop(context); // 다이얼로그 닫기
                     // Navigator.pop(context, {'isLoggedIn': true, 'userInfo': userInfo}); // 로그인 페이지 닫고 성공 여부 반환
-                    Navigator.pushReplacementNamed(
+                    Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/home',
+                      ModalRoute.withName('/home'),
                       arguments: {
                         'selectedIndex': 0,
                         'isLoggedIn': true,
@@ -267,10 +267,18 @@ class _LoginPageState extends State<LoginPage> {
           '\n닉네임: ${user.displayName}'
           '\n이메일: ${user.email}');
 
-      // 서버에 회원 정보 전송
+      // 서버에 회원 정보 전송 후 회원가입 진행
+
+      UserInfo userInfo = UserInfo(username: user.id,
+          nickname: user.displayName.toString(),
+          email: user.email, name: user.displayName.toString(),
+          password: "password",
+          phoneNumber: "phoneNumber",
+          bank: "bank", account: "account",
+          accountHolder: "accountHolder", role: "role",
+          isShareRoom: false);
 
       // 메인페이지로 이동
-      // navigateToMainPage(context);
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -282,13 +290,14 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () {
                   Navigator.pop(context); // 다이얼로그 닫기
                   // Navigator.pop(context, {'isLoggedIn': true});
-                  Navigator.popAndPushNamed(
+                  Navigator.pushNamedAndRemoveUntil(
                     context,
                     '/home',
+                    ModalRoute.withName('/home'),
                     arguments: {
                       'selectedIndex': 0,
                       'isLoggedIn': true,
-                      // 'userInfo': userInfo,
+                      'userInfo': userInfo,
                     },
                   );
                 },
@@ -330,13 +339,13 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: () {
                       Navigator.pop(context); // 다이얼로그 닫기
                       // Navigator.pop(context, {'isLoggedIn': true});
-                      Navigator.popAndPushNamed(
+                      Navigator.pushNamedAndRemoveUntil(
                         context,
                         '/home',
+                        ModalRoute.withName('/home'),
                         arguments: {
                           'selectedIndex': 0,
                           'isLoggedIn': true,
-                          // 'userInfo': userInfo,
                         },
                       );
                     },
@@ -375,13 +384,13 @@ class _LoginPageState extends State<LoginPage> {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context); // 다이얼로그 닫기
-                        Navigator.popAndPushNamed(
+                        Navigator.pushNamedAndRemoveUntil(
                           context,
                           '/home',
+                          ModalRoute.withName('/home'),
                           arguments: {
                             'selectedIndex': 0,
                             'isLoggedIn': true,
-                            // 'userInfo': userInfo,
                           },
                         );
                       },
@@ -417,13 +426,13 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: () {
                       Navigator.pop(context); // 다이얼로그 닫기
                       // Navigator.pop(context, {'isLoggedIn': true}); // 로그인 페이지 닫고 성공 여부 반환
-                      Navigator.popAndPushNamed(
+                      Navigator.pushNamedAndRemoveUntil(
                         context,
                         '/home',
+                        ModalRoute.withName('/home'),
                         arguments: {
                           'selectedIndex': 0,
                           'isLoggedIn': true,
-                          // 'userInfo': userInfo,
                         },
                       );
                     },
