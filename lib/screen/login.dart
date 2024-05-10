@@ -41,13 +41,11 @@ class _LoginPageState extends State<LoginPage> {
         },
         body: jsonEncode(data),
       );
-      print('response code=${response.statusCode}');
-
 
       if (response.statusCode == 200) {
         final userInfoJson = jsonDecode(response.body);
         UserInfo userInfo = UserInfo.fromJson(userInfoJson);
-        print('Response body: ${response.body}');
+
         // 로그인 성공
         showDialog(
           context: context,
@@ -269,12 +267,16 @@ class _LoginPageState extends State<LoginPage> {
 
       // 서버에 회원 정보 전송 후 회원가입 진행
 
-      UserInfo userInfo = UserInfo(username: user.id,
+      UserInfo userInfo = UserInfo(
+        userId: 0,
+          username: user.id,
           nickname: user.displayName.toString(),
-          email: user.email, name: user.displayName.toString(),
+          email: user.email,
+          name: user.displayName.toString(),
           password: "password",
           phoneNumber: "phoneNumber",
-          bank: "bank", account: "account",
+          bank: "bank",
+          account: "account",
           accountHolder: "accountHolder", role: "role",
           isShareRoom: false);
 

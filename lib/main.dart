@@ -1,3 +1,4 @@
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -6,8 +7,9 @@ import 'package:ott_share/screen/FindId.dart';
 import 'package:ott_share/screen/Login.dart';
 import 'package:ott_share/screen/SignUp.dart';
 import 'package:ott_share/screen/autoMatching.dart';
-import 'package:ott_share/screen/myPage.dart';
 import 'package:ott_share/screen/ottRecommendation.dart';
+import 'package:http/http.dart' as http;
+
 import 'api/google_signin_api.dart';
 import 'models/userInfo.dart';
 
@@ -36,18 +38,16 @@ class MyApp extends StatelessWidget {
         if (settings.name == '/autoMatching') {
           final args = settings.arguments as Map<String, dynamic>? ?? {};
           return MaterialPageRoute(
-            builder: (context) =>
-                HomePage(
-                    selectedIndex: args['selectedIndex']),
+            builder: (context) => HomePage(
+                selectedIndex: args['selectedIndex']),
           );
         } else if (settings.name == '/home') {
           final args = settings.arguments as Map<String, dynamic>? ?? {};
           return MaterialPageRoute(
-            builder: (context) =>
-                HomePage(
-                  userInfo: args['userInfo'] as UserInfo,
-                  isLoggedIn: args['isLoggedIn'] as bool,
-                ),
+            builder: (context) => HomePage(
+              userInfo: args['userInfo'] as UserInfo?,
+              isLoggedIn: args['isLoggedIn'] as bool,
+            ),
           );
         }
       },
@@ -57,6 +57,7 @@ class MyApp extends StatelessWidget {
         '/users/login': (context) => LoginPage(),
         '/findId': (context) => FindIdPage(),
         '/findPassword': (context) => FindPasswordPage(),
+        '/ottRecommendation' : (context) => OttRecommendationPage(),
       },
       home: HomePage(),
     );
@@ -70,12 +71,10 @@ class HomePage extends StatefulWidget {
   final bool? isLoggedIn; // 로그인 상태
 
 
-  HomePage({Key? key, this.userInfo, this.selectedIndex, this.isLoggedIn})
-      : super(key: key);
+  HomePage({Key? key, this.userInfo, this.selectedIndex, this.isLoggedIn}) : super(key: key);
 
   @override
-  State<HomePage> createState() =>
-      _HomePageState(userInfo: userInfo, isLoggedIn: isLoggedIn);
+  State<HomePage> createState() => _HomePageState(userInfo: userInfo, isLoggedIn: isLoggedIn);
 }
 
 class _HomePageState extends State<HomePage> {
@@ -93,17 +92,34 @@ class _HomePageState extends State<HomePage> {
     isLoggedIn = widget.isLoggedIn ?? false;
   }
 
+  static const TextStyle optionStyle = TextStyle(
+      fontSize: 30,
+      fontWeight: FontWeight.bold
+  );
+
+  final List<Widget> _widgetOptions = <Widget>[
+    AutoMatchingPage(),
+    OttRecommendationPage(),
+    AutoMatchingPage(), //임시 페이지
+    LoginPage(),
+  ];
+
   void _onItemTapped(int index) async {
     // '로그인/로그아웃' 버튼을 탭했을 때의 로직
-    if (index == 3 && isLoggedIn == false) {
-      // 로그인 페이지로 이동하고 결과를 기다립니다.
-      final result = await Navigator.pushNamed(context, '/users/login');
-      // 로그인 페이지에서 반환된 결과를 기반으로 상태를 업데이트합니다.
-      if (result is Map<String, dynamic>) {
-        setState(() {
-          isLoggedIn = result['isLoggedIn'] ?? false;
-          userInfo = result['userInfo'] as UserInfo?;
-        });
+    if (index == 3) { // 로그인/로그아웃 탭 인덱스, 필요에 따라 조정하세요.
+      if (isLoggedIn == false) {
+        // 로그인 페이지로 이동하고 결과를 기다립니다.
+        final result = await Navigator.pushNamed(context, '/users/login');
+        // 로그인 페이지에서 반환된 결과를 기반으로 상태를 업데이트합니다.
+        if (result is Map<String, dynamic>) {
+          setState(() {
+            isLoggedIn = result['isLoggedIn'] ?? false;
+            userInfo = result['userInfo'] as UserInfo?;
+          });
+        }
+      } else {
+        // 로그아웃 로직
+        await logout();
       }
     } else {
       setState(() {
@@ -163,32 +179,16 @@ class _HomePageState extends State<HomePage> {
       BottomNavigationBarItem(icon: Icon(Icons.share), label: '자동매칭'),
       BottomNavigationBarItem(icon: Icon(Icons.movie_filter), label: 'OTT 추천'),
       BottomNavigationBarItem(icon: Icon(Icons.chat), label: '채팅방 기록'),
-      BottomNavigationBarItem(
-          icon: isLoggedIn == true ? Icon(Icons.person) : Icon(Icons.login),
-          label: isLoggedIn == true ? '마이페이지' : '로그인'),
+      BottomNavigationBarItem(icon: isLoggedIn == true ? Icon(Icons.person) : Icon(Icons.login), label: isLoggedIn == true ? '로그아웃' : '로그인'),
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('OTT'),
-        bottom: PreferredSize(preferredSize: Size.fromHeight(1.0),
-            child: Divider(height: 1.0, color: Colors.black)),
-        actions: <Widget>[
-          if (isLoggedIn == true)
-            IconButton(
-              icon: Icon(Icons.logout), // 검색 아이콘 지정
-              onPressed: () {
-                logout();
-              },
-            ),
-        ],
-      ),
       body: SafeArea(
         child: <Widget>[
           AutoMatchingPage(userInfo: widget.userInfo),
           OttRecommendationPage(),
           AutoMatchingPage(), //임시 페이지
-          MyPage(userInfo: widget.userInfo),
+          LoginPage(),
         ].elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
