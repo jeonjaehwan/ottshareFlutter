@@ -8,17 +8,21 @@ import 'package:ott_share/screen/Login.dart';
 import 'package:ott_share/screen/SignUp.dart';
 import 'package:ott_share/screen/autoMatching.dart';
 import 'package:ott_share/screen/ottRecommendation.dart';
+import 'package:ott_share/models/loginStorage.dart';
+
 import 'package:http/http.dart' as http;
 
 import 'api/google_signin_api.dart';
 import 'models/userInfo.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   KakaoSdk.init(
     nativeAppKey: 'b8d545024ec99b8ad44c04b522cab54f',
     javaScriptAppKey: 'a883fcabacb6ce410161d059b4dd1e75',
   );
+  WidgetsFlutterBinding.ensureInitialized();  // 이 줄이 필수적으로 필요할 수 있습니다.
+  await LoginStorage.init();
   runApp(MyApp());
 }
 

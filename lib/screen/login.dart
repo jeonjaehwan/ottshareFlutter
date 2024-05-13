@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import '../models/loginStorage.dart';
 
 import '../api/google_signin_api.dart';
 import '../models/userInfo.dart';
@@ -45,8 +46,8 @@ class _LoginPageState extends State<LoginPage> {
       if (response.statusCode == 200) {
         final userInfoJson = jsonDecode(response.body);
         UserInfo userInfo = UserInfo.fromJson(userInfoJson);
+        await LoginStorage.saveUserId(userInfo.userId); // 로그인 성공 시 사용자 ID 저장
 
-        // 로그인 성공
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -57,7 +58,6 @@ class _LoginPageState extends State<LoginPage> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context); // 다이얼로그 닫기
-                    // Navigator.pop(context, {'isLoggedIn': true, 'userInfo': userInfo}); // 로그인 페이지 닫고 성공 여부 반환
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/home',
@@ -76,12 +76,12 @@ class _LoginPageState extends State<LoginPage> {
           },
         );
       } else {
-        // 회원가입 실패
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
               title: Text('로그인 실패'),
+              content: Text('아이디 또는 비밀번호가 잘못되었습니다.'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -95,13 +95,12 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } catch (error) {
-      print('Error: $error');
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('오류 발생'),
-            content: Text('로그인 중 오류가 발생했습니다. 다시 시도해주세요.'),
+            title: Text('네트워크 오류'),
+            content: Text('로그인 중 오류가 발생했습니다. 네트워크 상태를 확인해주세요.'),
             actions: [
               TextButton(
                 onPressed: () {

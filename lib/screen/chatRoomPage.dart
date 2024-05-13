@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import '../models/loginStorage.dart';  // Ensure this path is correct
 
 class ChatRoomPage extends StatefulWidget {
-  final dynamic ottShareRoom; // 변수 이름을 명확하게 할당
+  final dynamic ottShareRoom;
 
-  ChatRoomPage({Key? key, required this.ottShareRoom}) : super(key: key); // required 키워드 추가
+  ChatRoomPage({Key? key, required this.ottShareRoom}) : super(key: key);
 
   @override
   _ChatRoomPageState createState() => _ChatRoomPageState();
@@ -18,14 +19,9 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   @override
   void initState() {
     super.initState();
-    // 서버의 WebSocket 엔드포인트와 일치하는지 확인
     String websocketURL = 'ws://10.0.2.2:8080/websocket';
-    print('Connecting to $websocketURL'); // 디버깅: 실제 URL 확인
-    channel = WebSocketChannel.connect(
-      Uri.parse(websocketURL),
-    );
+    channel = WebSocketChannel.connect(Uri.parse(websocketURL));
   }
-
 
   @override
   void dispose() {
@@ -33,19 +29,48 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     if (_controller.text.isNotEmpty) {
-      // STOMP 프레임 형식으로 메시지 구성
+      print("Text is not empty, trying to send a message.");
+      int? currentUserId = await LoginStorage.getUserId();
+      if (currentUserId == null) {
+        print("No user logged in.");
+        return;
+      }
+
+      var currentUserInfo = widget.ottShareRoom['ottRoomMemberResponses'].firstWhere(
+              (response) => response['user']['id'] == currentUserId,
+          orElse: () => null
+      );
+
+      if (currentUserInfo == null) {
+        print("Current user information not found.");
+        return;
+      }
+
+      var messageRequest = {
+        'ottShareRoom': widget.ottShareRoom,
+        'ottRoomMemberResponse': currentUserInfo,
+        'message': _controller.text
+      };
+
+      // JSON으로 인코딩하기 전에 데이터를 출력
+      print('Sending message with data: $messageRequest');
+
       var stompFrame = 'SEND\n'
           'destination:/app/chat/${widget.ottShareRoom['id']}\n'
           'content-type:application/json;charset=UTF-8\n\n' +
-          jsonEncode({'content': _controller.text}) +
-          '\u0000'; // NULL 문자로 프레임 종료
+          jsonEncode(messageRequest) +
+          '\u0000';
 
       channel.sink.add(stompFrame);
       _controller.clear();
+    } else {
+      print("Text is empty, no message to send.");
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
