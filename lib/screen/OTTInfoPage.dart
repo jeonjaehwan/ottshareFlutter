@@ -24,6 +24,7 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
     String ottAccountId = _ottAccountIdController.text;
     String ottAccountPassword = _ottAccountPasswordController.text;
 
+
     // OTT 인덱스와 방장 여부
     int? selectedOttIndex = widget.selectedOttIndex;
     bool? isLeader = widget.isLeader;
@@ -57,15 +58,19 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
 
     // 서버로 POST 요청 보내기
     final response = await http.post(
-      Uri.parse('http://10.0.2.2:8080/api/waitingUser/save'),
+      Uri.parse('http://localhost:8080/api/waitingUser/save'),
       headers: {"Content-Type": "application/json"},
       body: requestBodyJson,
     );
 
-
-    Navigator.pop(context);
-
+    if (response.statusCode == 200) {
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('자동 매칭 실패')));
+    }
   }
+
 
 
   @override

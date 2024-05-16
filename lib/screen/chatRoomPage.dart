@@ -19,7 +19,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   @override
   void initState() {
     super.initState();
-    String websocketURL = 'ws://10.0.2.2:8080/websocket';
+    String websocketURL = 'ws://localhost:8080/websocket';
     channel = WebSocketChannel.connect(Uri.parse(websocketURL));
   }
 

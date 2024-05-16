@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -9,6 +8,7 @@ import 'package:ott_share/screen/SignUp.dart';
 import 'package:ott_share/screen/autoMatching.dart';
 import 'package:ott_share/screen/ottRecommendation.dart';
 import 'package:ott_share/models/loginStorage.dart';
+import 'package:ott_share/screen/myPage.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -101,12 +101,6 @@ class _HomePageState extends State<HomePage> {
       fontWeight: FontWeight.bold
   );
 
-  final List<Widget> _widgetOptions = <Widget>[
-    AutoMatchingPage(),
-    OttRecommendationPage(),
-    AutoMatchingPage(), //임시 페이지
-    LoginPage(),
-  ];
 
   void _onItemTapped(int index) async {
     // '로그인/로그아웃' 버튼을 탭했을 때의 로직
@@ -122,8 +116,10 @@ class _HomePageState extends State<HomePage> {
           });
         }
       } else {
-        // 로그아웃 로직
-        await logout();
+        // 마이페이지 이동 로직
+        setState(() {
+          _selectedIndex = index;
+        });
       }
     } else {
       setState(() {
@@ -161,38 +157,36 @@ class _HomePageState extends State<HomePage> {
         );
       },
     );
-    // final url = Uri.parse('http://10.0.2.2:8080/api/users/logout');
-    // final response = await http.post(url);
-    //
-    // if (response.statusCode == 200) {
-    //   print('로그아웃 성공');
-    //   setState(() {
-    //     isLoggedIn = false;
-    //   });
-    // } else {
-    //   print('로그아웃 실패: ${response.body}');
-    // }
   }
 
   // 메인 위젯
   @override
   Widget build(BuildContext context) {
-    print('user info = ${widget.userInfo}');
 
     List<BottomNavigationBarItem> bottomItems = [
       BottomNavigationBarItem(icon: Icon(Icons.share), label: '자동매칭'),
       BottomNavigationBarItem(icon: Icon(Icons.movie_filter), label: 'OTT 추천'),
       BottomNavigationBarItem(icon: Icon(Icons.chat), label: '채팅방 기록'),
-      BottomNavigationBarItem(icon: isLoggedIn == true ? Icon(Icons.person) : Icon(Icons.login), label: isLoggedIn == true ? '로그아웃' : '로그인'),
+      BottomNavigationBarItem(icon: isLoggedIn == true ? Icon(Icons.person) : Icon(Icons.login), label: isLoggedIn == true ? '마이페이지' : '로그인'),
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text('OTT 공유'),
+        actions: [
+          if (isLoggedIn == true)
+            IconButton(
+                icon: Icon(Icons.logout),
+                onPressed: logout)
+        ],
+        bottom: PreferredSize(preferredSize: Size.fromHeight(1.0), child: Divider(height: 1.0, color: Colors.black)),
+      ),
       body: SafeArea(
         child: <Widget>[
           AutoMatchingPage(userInfo: widget.userInfo),
           OttRecommendationPage(),
           AutoMatchingPage(), //임시 페이지
-          LoginPage(),
+          MyPage(userInfo: widget.userInfo, selectedIndex : 3),
         ].elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(

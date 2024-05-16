@@ -18,16 +18,44 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   late UserInfo? userInfo;
   int? selectedOttIndex; // 선택된 OTT의 인덱스를 추적하는 변수
   bool? isLeader; // 방장이 선택되었는지 여부를 나타내는 상태
+  late bool? isShareRoom;
+  bool isStartMatching = false;
+
+
+
 
   @override
   void initState() {
     super.initState();
     userInfo = widget.userInfo;
+    isShareRoom = widget.userInfo?.isShareRoom;
+    // isShareRoom = true;
+
+
+    getIsStartMatching().then((value) {
+      setState(() {
+        isStartMatching = value;
+      });
+    });
+
+    print('user info = ${widget.userInfo}');
+
+  }
+
+  Future<bool> getIsStartMatching() async {
+
+    final response = await http.get(
+      Uri.parse('http://localhost:8080/api/waitingUser/save'),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    return false;
   }
 
   Future<void> sendAutoMatchingRequest() async {
     if (selectedOttIndex == null || isLeader == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select both OTT and role.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please select both OTT and role.')));
       return;
     }
 
@@ -43,7 +71,8 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
         ottTypeString = 'WAVVE';
         break;
       default:
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid OTT selection')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Invalid OTT selection')));
         return;
     }
 
@@ -59,7 +88,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     var body = jsonEncode(requestMap);
 
     final response = await http.post(
-      Uri.parse('http://10.0.2.2:8080/api/waitingUser/save'),
+      Uri.parse('http://localhost:8080/api/waitingUser/save'),
       headers: {"Content-Type": "application/json"},
       body: body,
     );
@@ -67,12 +96,15 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
   Future<void> navigateToChatRoom() async {
     if (userInfo == null || userInfo!.userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User information is incomplete.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User information is incomplete.')));
       return;
     }
 
-    var url = Uri.parse('http://10.0.2.2:8080/api/ottShareRoom/${userInfo!.userId}');
-    var response = await http.get(url, headers: {"Content-Type": "application/json"});
+    var url =
+        Uri.parse('http://localhost:8080/api/ottShareRoom/${userInfo!.userId}');
+    var response =
+        await http.get(url, headers: {"Content-Type": "application/json"});
 
     if (response.statusCode == 200) {
       var ottShareRoom = jsonDecode(response.body);
@@ -84,28 +116,33 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to retrieve room information'))
-      );
+          SnackBar(content: Text('Failed to retrieve room information')));
     }
   }
 
   Widget ottBox(String assetName, String label, int index) {
     bool isSelected = selectedOttIndex == index;
-    return InkWell(
-      onTap: () => _onOttTapped(index),
-      child: Container(
-        padding: EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.yellow : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isSelected ? Colors.yellow : Colors.grey, width: isSelected ? 3 : 1),
+    return ElevatedButton(
+        onPressed: () => _onOttTapped(index),
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: isSelected ? Color(0xffffdf24) : Colors.white,
+          foregroundColor: isSelected ? Colors.white : Colors.black,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: Color(0xffffdf24), width: 2)),
         ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Image.asset(assetName, width: 70),
-          Text(label)
-        ]),
-      ),
-    );
+        child: Container(
+            height: 140,
+            width: 60,
+            child: Column(mainAxisSize: MainAxisSize.max, children: <Widget>[
+              Container(
+                height: 70,
+                child: Image.asset(assetName, width: 50, height: 50),
+              ),
+              Text(label),
+            ]))
+        );
   }
 
   ElevatedButton roleButton(String label, bool selected, bool leader) {
@@ -116,9 +153,11 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
         });
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: selected ? Colors.yellow : Colors.white,
-        foregroundColor: Colors.black,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        backgroundColor: selected ? Color(0xffffdf24) : Colors.white,
+        foregroundColor: selected ? Colors.white : Colors.black,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: Color(0xffffdf24), width: 2))
       ),
       child: Container(
         height: 70,
@@ -153,40 +192,48 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => OTTInfoPage(
-                selectedOttIndex: selectedOttIndex ?? 0,
-                isLeader: isLeader ?? false,
-                userInfo: userInfo
-            ),
-          ),
+              builder: (context) => OTTInfoPage(
+                  selectedOttIndex: selectedOttIndex ?? 0,
+                  isLeader: isLeader ?? false,
+                  userInfo: userInfo)),
+        ).then(
+          (value) {
+            setState(() {
+              isStartMatching = value;
+            });
+          },
         );
       } else {
         sendAutoMatchingRequest();
       }
     } else {
-      ScaffoldMessenger.of(context). showSnackBar(
-          SnackBar(content: Text('OTT 서비스와 역할을 모두 선택해주세요.'))
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('OTT 서비스와 역할을 모두 선택해주세요.')));
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
     String subscriptionText = _calculateSubscription();
     bool hasSelectedService = selectedOttIndex != null;
-    bool isShareRoom = userInfo?.isShareRoom ?? false;
+
+    
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('OTT 공유'),
-        bottom: PreferredSize(preferredSize: Size.fromHeight(1.0), child: Divider(height: 1.0, color: Colors.black)),
-      ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Align(alignment: Alignment.centerLeft, child: Text('OTT', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black))),
+            Align(
+                alignment: Alignment.centerLeft,
+                child: Text('OTT',
+                    style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black))),
             SizedBox(height: 10),
             Row(mainAxisAlignment: MainAxisAlignment.start, children: <Widget>[
               ottBox('assets/netflix_logo.png', '넷플릭스', 0),
@@ -196,56 +243,81 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
               ottBox('assets/wavve_logo.png', '웨이브', 2),
             ]),
             SizedBox(height: 50),
-            Align(alignment: Alignment.centerLeft, child: Text('역할', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black))),
+            Align(
+                alignment: Alignment.centerLeft,
+                child: Text('역할',
+                    style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black))),
             SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
-                Expanded(child: Padding(padding: EdgeInsets.only(right: 4.0), child: roleButton('방장', isLeader == true, true))),
-                Expanded(child: Padding(padding: EdgeInsets.only(left: 4.0), child: roleButton('멤버', isLeader == false, false))),
+                Expanded(
+                    child: Padding(
+                        padding: EdgeInsets.only(right: 4.0),
+                        child: roleButton('방장', isLeader == true, true))),
+                Expanded(
+                    child: Padding(
+                        padding: EdgeInsets.only(left: 4.0),
+                        child: roleButton('멤버', isLeader == false, false))),
               ],
             ),
             SizedBox(height: 50),
-            if (hasSelectedService) Container(
-              height: 100,
-              width: double.infinity,
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey, width: 2),
+            if (hasSelectedService)
+              Container(
+                height: 100,
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey, width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('구독 금액',
+                        style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black)),
+                    Text(subscriptionText,
+                        style: TextStyle(fontSize: 20, color: Colors.black)),
+                  ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('구독 금액', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
-                  Text(subscriptionText, style: TextStyle(fontSize: 20, color: Colors.black)),
-                ],
+            if (!hasSelectedService)
+              Container(
+                height: 100,
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey, width: 2),
+                ),
+                child: Center(
+                  child: Text("서비스를 선택해주세요",
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black)),
+                ),
               ),
-            ),
-            if (!hasSelectedService) Container(
-              height: 100,
-              width: double.infinity,
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey, width: 2),
-              ),
-              child: Center(
-                child: Text("서비스를 선택해주세요", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)),
-              ),
-            ),
             SizedBox(height: 60),
             ElevatedButton(
-              onPressed: isShareRoom ? navigateToChatRoom : _handleAutoMatching,
+              onPressed: isShareRoom == true ? navigateToChatRoom : (isStartMatching == true ? null : _handleAutoMatching),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xffffdf24),
                 foregroundColor: Colors.black,
                 minimumSize: Size(double.infinity, 60),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
-              child: Text(isShareRoom ? '채팅방 이동' : '자동매칭', style: TextStyle(fontSize: 26)),
+              child: Text(isShareRoom == true ? '채팅방 이동' : (isStartMatching == true ? '자동매칭 진행 중' : '자동매칭'),
+                  style: TextStyle(fontSize: 26)),
             ),
           ],
         ),

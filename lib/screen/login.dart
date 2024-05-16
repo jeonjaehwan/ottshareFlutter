@@ -21,7 +21,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login(BuildContext context) async {
 
-    final String apiUrl = 'http://10.0.2.2:8080/api/users/loginProc';
+    final String apiUrl = 'http://localhost:8080/api/users/loginProc';
 
     String username = _usernameController.text;
     String password = _passwordController.text;
@@ -50,16 +50,15 @@ class _LoginPageState extends State<LoginPage> {
 
         showDialog(
           context: context,
-          builder: (BuildContext context) {
+          builder: (_) {
             return AlertDialog(
               title: Text('로그인 성공'),
               content: Text('로그인이 성공적으로 완료되었습니다.'),
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context); // 다이얼로그 닫기
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pushNamedAndRemoveUntil(
                       '/home',
                       ModalRoute.withName('/home'),
                       arguments: {
