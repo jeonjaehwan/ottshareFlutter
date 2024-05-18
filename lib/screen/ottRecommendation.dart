@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
+import 'package:ott_share/models/OttQuestionInfo.dart';
 
 import '../models/userInfo.dart';
 
@@ -23,6 +24,7 @@ class _OttRecommendationPageState extends State<OttRecommendationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
         body: Column(
           children: [
             Container(height: 150),
@@ -70,7 +72,7 @@ class _StartPageState extends State<StartPage> {
   bool isFirstQuestion = true;
   bool isQuestionSelected = false;
   late int _selectedIndex;
-  var beforeResponseBody;
+  OttQuestionInfo? beforeResponseBody=null;
 
   late UserInfo? userInfo;
 
@@ -111,11 +113,12 @@ class _StartPageState extends State<StartPage> {
                     onPressed: () async {
                       if (pageCount == 1) {
                         buttonText = '다음';
-                        var responseBody = await sendGetQuestionRequest(pageCount);
-                        beforeResponseBody = responseBody;
+                        OttQuestionInfo? questionInfo = await sendGetQuestionRequest(pageCount);
+                        print("첫번째 질문 정보 : $questionInfo");
+                        beforeResponseBody = questionInfo;
                         setState(() => body = FirstQuestionPage(
                             key: UniqueKey(),
-                            responseBody: responseBody,
+                            questionInfo: questionInfo,
                             isFirstQuestionCallback: (bool value) {
                               setState(() {
                                 isFirstQuestion = value;
@@ -139,7 +142,7 @@ class _StartPageState extends State<StartPage> {
                           // 선택된 상태인지 확인
                           if (pageCount == 16) {
                             buttonText = '자동매칭 시작';
-                            var result = await sendGetResultRequest();
+                            String? result = await sendGetResultRequest();
                             setState(() {
                               body = ResultPage(
                                 key: UniqueKey(),
@@ -150,13 +153,13 @@ class _StartPageState extends State<StartPage> {
                             if (pageCount == 15) {
                               buttonText = '결과 확인';
                             }
-                            await sendCountOttScoreRequest(beforeResponseBody);
-                            var responseBody = await sendGetQuestionRequest(pageCount);
-                            beforeResponseBody = responseBody;
+                            await sendCountOttScoreRequest(beforeResponseBody!);
+                            OttQuestionInfo? questionInfo = await sendGetQuestionRequest(pageCount);
+                            beforeResponseBody = questionInfo;
                             setState(() {
                               body = FirstQuestionPage(
                                 key: UniqueKey(),
-                                responseBody: responseBody,
+                                questionInfo: questionInfo,
                                 isFirstQuestionCallback: (bool value) {
                                   setState(() {
                                     isFirstQuestion = value;
@@ -209,73 +212,73 @@ class _StartPageState extends State<StartPage> {
     );
   }
 
-  Future<dynamic> sendGetQuestionRequest(int pageCount) async {
-    final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/ottRecQuestions/${pageCount}'),
-      headers: {"Content-Encoding": "utf-8"},
-    );
+  Future<OttQuestionInfo?> sendGetQuestionRequest(int pageCount) async {
 
-    if (response.statusCode == 200) {
-      // 성공 처리
-      var responseBody = jsonDecode(utf8.decode(response.bodyBytes));
-      print('Success response: ${responseBody}'); // 성공 응답 본문 출력
+    try {
 
-      return responseBody;
-    } else {
-      // 실패 처리
-      print('Failure response: ${response.body}'); // 실패 응답 본문 출력
+      final response = await http.get(
+        Uri.parse('http://127.0.0.1:8080/api/ottRecQuestions/${pageCount}'),
+        headers: <String, String>{"Content-Encoding": "utf-8"},
+      );
+
+      if (response.statusCode == 200) {
+        // 성공 처리
+        final questionInfoJson = jsonDecode(response.body);
+        OttQuestionInfo responseBody = OttQuestionInfo.fromJson(questionInfoJson);
+        print('Success response: ${responseBody}'); // 성공 응답 본문 출력
+
+        return responseBody;
+      } else {
+        // 실패 처리
+        print('Failure response: ${response.body}'); // 실패 응답 본문 출력
+        return null;
+      }
+    } catch(error) {
+      print('catch Failure response: ${error}');
     }
+
   }
 
-  Future<dynamic> sendCountOttScoreRequest(dynamic responseBody) async {
+  Future<OttQuestionInfo?> sendCountOttScoreRequest(OttQuestionInfo questionInfo) async {
 
-    Map<String, dynamic> requestMap = {
-      'isFirstQuestion': isFirstQuestion,
-      'firstQuestion': responseBody['firstQuestion'],
-      'secondQuestion': responseBody['secondQuestion'],
-      'firstQuestionOttType' : responseBody['firstQuestionOttType'],
-      'secondQuestionOttType': responseBody['secondQuestionOttType']
-    };
-
-    var body = jsonEncode(requestMap);
-
-    print('Request body: $body'); // 요청 본문 출력
+    Map<String, dynamic> requestMap = questionInfo.toJson();
 
     await http.post(
-      Uri.parse('http://10.0.2.2:8080/api/ottRecQuestions/${pageCount}'),
+      Uri.parse('http://localhost:8080/api/ottRecQuestions/${pageCount}'),
       headers: {
         "Content-Encoding": "utf-8",
         "Content-Type": "application/json"
       },
-      body: body,
+      body: jsonEncode(requestMap),
     );
   }
 
-  Future<dynamic> sendGetResultRequest() async {
+  Future<String?> sendGetResultRequest() async {
     final response = await http.post(
-      Uri.parse('http://10.0.2.2:8080/api/ottRecQuestions/16'),
+      Uri.parse('http://localhost:8080/api/ottRecQuestions/16'),
       headers: {"Content-Encoding": "utf-8"},
     );
 
     if (response.statusCode == 200) {
       // 성공 처리
-      var responseBody = jsonDecode(utf8.decode(response.bodyBytes));
+      String responseBody = jsonDecode(response.body);
       print('Success response: ${responseBody}'); // 성공 응답 본문 출력
 
       return responseBody;
     } else {
       // 실패 처리
       print('Failure response: ${response.body}'); // 실패 응답 본문 출력
+      return null;
     }
 
   }
 }
 
 class FirstQuestionPage extends StatefulWidget {
-  final dynamic responseBody;
+  final OttQuestionInfo? questionInfo;
   Function(bool)? isFirstQuestionCallback;
 
-  FirstQuestionPage({Key? key, this.responseBody, this.isFirstQuestionCallback})
+  FirstQuestionPage({Key? key, this.questionInfo, this.isFirstQuestionCallback})
       : super(key: key);
 
   @override
@@ -318,7 +321,7 @@ class _FirstQuestionPageState extends State<FirstQuestionPage> {
           Container(
             child: Center(
               child: Text(
-                '질문 ${widget.responseBody['id']}/15',
+                '질문 ${widget.questionInfo!.questionId}/15',
                 style: TextStyle(fontSize: 25, fontWeight: FontWeight.w600),
               ),
             ),
@@ -329,7 +332,7 @@ class _FirstQuestionPageState extends State<FirstQuestionPage> {
             height: 65,
             child: Center(
               child: questionbox(
-                  widget.responseBody['firstQuestion'].toString(),
+                  widget.questionInfo!.firstQuestion.toString(),
                   isFirstQuestion == true,
                   true),
             ),
@@ -340,7 +343,7 @@ class _FirstQuestionPageState extends State<FirstQuestionPage> {
             height: 65,
             child: Center(
               child: questionbox(
-                  widget.responseBody['secondQuestion'].toString(),
+                  widget.questionInfo!.secondQuestion.toString(),
                   isFirstQuestion == false,
                   false),
             ),

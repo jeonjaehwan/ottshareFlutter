@@ -10,7 +10,7 @@ class UserInfo {
   final String account;
   final String accountHolder;
   final String role;
-  final bool isShareRoom;
+  bool isShareRoom = false;
 
   UserInfo({
     required this.userId,
@@ -62,4 +62,5 @@ class UserInfo {
       'shareRoom': isShareRoom,
     };
   }
+
 }

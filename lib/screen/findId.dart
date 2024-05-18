@@ -16,7 +16,7 @@ class _FindIdPageState extends State<FindIdPage> {
    * 인증번호 전송
    */
   Future<void> _sendVerificationCode(BuildContext context) async {
-    final String apiUrl = 'http://10.0.2.2:8080/api/users/send';
+    final String apiUrl = 'http://localhost:8080/api/users/send';
 
     String name = _nameController.text;
     String phoneNumber = _phoneNumberController.text;
@@ -97,7 +97,7 @@ class _FindIdPageState extends State<FindIdPage> {
    * 인증번호 확인
    */
   Future<void> _checkConfirmationCode(BuildContext context) async {
-    final String apiUrl = 'http://10.0.2.2:8080/api/users/find-username';
+    final String apiUrl = 'http://localhost:8080/api/users/find-username';
 
     String name = _nameController.text;
     String phoneNumber = _phoneNumberController.text;

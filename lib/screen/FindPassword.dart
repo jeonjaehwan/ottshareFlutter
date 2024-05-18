@@ -16,7 +16,7 @@ class _FindPasswordPageState extends State<FindPasswordPage> {
    * 비밀번호 재설정 링크 전송
    */
   Future<void> _sendResetLink(BuildContext context) async {
-    final String apiUrl = 'http://10.0.2.2:8080/api/users/find-password';
+    final String apiUrl = 'http://localhost:8080/api/users/find-password';
 
     String name = _nameController.text;
     String username = _usernameController.text;
