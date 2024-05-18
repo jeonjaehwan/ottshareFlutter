@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:http/http.dart' as http;
 import '../models/loginStorage.dart';  // Ensure this path is correct
 
 class ChatRoomPage extends StatefulWidget {
@@ -15,23 +16,48 @@ class ChatRoomPage extends StatefulWidget {
 class _ChatRoomPageState extends State<ChatRoomPage> {
   final TextEditingController _controller = TextEditingController();
   late WebSocketChannel channel;
+  List<String> messages = [];  // List to store messages
 
   @override
   void initState() {
     super.initState();
     String websocketURL = 'ws://localhost:8080/websocket';
     channel = WebSocketChannel.connect(Uri.parse(websocketURL));
+    channel.stream.listen((message) {
+      setState(() {
+        messages.add(jsonDecode(message)['message']);  // Assume message is properly formatted
+        if (messages.length > 10) {
+          messages.removeAt(0);  // Remove the oldest message to maintain only 10 messages
+        }
+      });
+    });
+    loadInitialMessages();
   }
 
-  @override
-  void dispose() {
-    channel.sink.close();
-    super.dispose();
+  Future<void> loadInitialMessages() async {
+    var initialMessages = await fetchMessages();
+    setState(() {
+      messages.addAll(initialMessages.map((e) => e['message']));
+      // Ensure only the latest 10 messages are kept if more than 10 messages are loaded
+      if (messages.length > 10) {
+        messages = messages.take(10).toList();
+      }
+    });
+  }
+
+  Future<List<dynamic>> fetchMessages() async {
+    final response = await http.get(Uri.parse('http://10.0.2.2:8080/chat/${widget.ottShareRoom['id']}/messages'));
+
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      return data['content'];  // Access the 'content' part of the page
+    } else {
+      throw Exception('Failed to load messages');
+    }
   }
 
   void _sendMessage() async {
     if (_controller.text.isNotEmpty) {
-      print("Text is not empty, trying to send a message.");
       int? currentUserId = await LoginStorage.getUserId();
       if (currentUserId == null) {
         print("No user logged in.");
@@ -39,9 +65,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       }
 
       var currentUserInfo = widget.ottShareRoom['ottRoomMemberResponses'].firstWhere(
-              (response) => response['user']['id'] == currentUserId,
-          orElse: () => null
-      );
+              (response) => response['user']['id'] == currentUserId, orElse: () => null);
 
       if (currentUserInfo == null) {
         print("Current user information not found.");
@@ -54,9 +78,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         'message': _controller.text
       };
 
-      // JSON으로 인코딩하기 전에 데이터를 출력
-      print('Sending message with data: $messageRequest');
-
       var stompFrame = 'SEND\n'
           'destination:/app/chat/${widget.ottShareRoom['id']}\n'
           'content-type:application/json;charset=UTF-8\n\n' +
@@ -64,13 +85,15 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           '\u0000';
 
       channel.sink.add(stompFrame);
+      setState(() {
+        messages.add(_controller.text);  // Add message at the end
+        if (messages.length > 10) {
+          messages.removeAt(0);  // Maintain only the latest 10 messages
+        }
+      });
       _controller.clear();
-    } else {
-      print("Text is empty, no message to send.");
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -84,15 +107,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: StreamBuilder(
-                stream: channel.stream,
-                builder: (context, snapshot) {
-                  return ListView.builder(
-                    reverse: true,
-                    itemBuilder: (_, index) => ListTile(
-                      title: Text(snapshot.data ?? ""),
-                    ),
-                    itemCount: snapshot.hasData ? 1 : 0,
+              child: ListView.builder(
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(messages[index]),
                   );
                 },
               ),
@@ -109,4 +128,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    channel.sink.close();
+    super.dispose();
+  }
 }
+
