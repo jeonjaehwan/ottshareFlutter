@@ -6,6 +6,7 @@ import 'package:ott_share/screen/FindId.dart';
 import 'package:ott_share/screen/Login.dart';
 import 'package:ott_share/screen/SignUp.dart';
 import 'package:ott_share/screen/autoMatching.dart';
+import 'package:ott_share/chatting/chatRoomPage.dart';
 import 'package:ott_share/screen/ottRecommendation.dart';
 import 'package:ott_share/models/loginStorage.dart';
 import 'package:ott_share/screen/myPage.dart';
@@ -163,6 +164,17 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
 
+    String titleText = '';
+
+    switch (_selectedIndex) {
+      case 0:
+        titleText = 'OTT 공유';
+      case 1:
+        titleText = 'OTT 추천';
+      case 2:
+        titleText = '채팅방 기록';
+    }
+
     List<BottomNavigationBarItem> bottomItems = [
       BottomNavigationBarItem(icon: Icon(Icons.share), label: '자동매칭'),
       BottomNavigationBarItem(icon: Icon(Icons.movie_filter), label: 'OTT 추천'),
@@ -172,7 +184,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('OTT 공유'),
+        title: Text(titleText),
         backgroundColor: Color(0xffffdf24),
         centerTitle: true,
         elevation: 0.0,
@@ -187,7 +199,7 @@ class _HomePageState extends State<HomePage> {
         child: <Widget>[
           AutoMatchingPage(userInfo: widget.userInfo),
           OttRecommendationPage(),
-          AutoMatchingPage(), //임시 페이지
+          ChatRoomPage(ottShareRoom: "dd"), //임시 페이지
           MyPage(userInfo: widget.userInfo, selectedIndex : 3),
         ].elementAt(_selectedIndex),
       ),

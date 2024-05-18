@@ -15,23 +15,24 @@ class ChatRoomPage extends StatefulWidget {
 
 class _ChatRoomPageState extends State<ChatRoomPage> {
   final TextEditingController _controller = TextEditingController();
+  final scrollController = ScrollController();
   late WebSocketChannel channel;
-  List<String> messages = [];  // List to store messages
+  List<String> messages = ['하이','헬로','하하'];  // List to store messages
 
   @override
   void initState() {
     super.initState();
-    String websocketURL = 'ws://localhost:8080/websocket';
-    channel = WebSocketChannel.connect(Uri.parse(websocketURL));
-    channel.stream.listen((message) {
-      setState(() {
-        messages.add(jsonDecode(message)['message']);  // Assume message is properly formatted
-        if (messages.length > 10) {
-          messages.removeAt(0);  // Remove the oldest message to maintain only 10 messages
-        }
-      });
-    });
-    loadInitialMessages();
+    // String websocketURL = 'ws://localhost:8080/websocket';
+    // channel = WebSocketChannel.connect(Uri.parse(websocketURL));
+    // channel.stream.listen((message) {
+    //   setState(() {
+    //     messages.add(jsonDecode(message)['message']);  // Assume message is properly formatted
+    //     if (messages.length > 10) {
+    //       messages.removeAt(0);  // Remove the oldest message to maintain only 10 messages
+    //     }
+    //   });
+    // });
+    // loadInitialMessages();
   }
 
   Future<void> loadInitialMessages() async {
@@ -46,7 +47,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   }
 
   Future<List<dynamic>> fetchMessages() async {
-    final response = await http.get(Uri.parse('http://10.0.2.2:8080/chat/${widget.ottShareRoom['id']}/messages'));
+    final response = await http.get(Uri.parse('http://localhost:8080/chat/${widget.ottShareRoom['id']}/messages'));
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
@@ -98,8 +99,12 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text('채팅방'),
+        backgroundColor: Color(0xffffdf24),
+        centerTitle: true,
+        elevation: 0.0,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -107,14 +112,29 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: ListView.builder(
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(messages[index]),
-                  );
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ListView.separated(
+                  reverse: true,
+                  shrinkWrap: true,
+                  controller: scrollController,
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(messages[index]),
+                      titleTextStyle: TextStyle(
+                        fontSize: 20.0,
+                      ),
+                    );
+                  },
+                  separatorBuilder: (BuildContext context, int index) {
+                    return Container(
+                      height: 10,
+                      color: Colors.yellow,
+                    );
                 },
-              ),
+                ),
+              )
             ),
             TextField(
               controller: _controller,
