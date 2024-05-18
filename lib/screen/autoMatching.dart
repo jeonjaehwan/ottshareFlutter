@@ -5,6 +5,8 @@ import 'package:ott_share/models/userInfo.dart';
 import 'package:ott_share/screen/ChatRoomPage.dart';
 import 'package:ott_share/screen/OTTInfoPage.dart';
 
+import '../models/loginStorage.dart';
+
 class AutoMatchingPage extends StatefulWidget {
   final UserInfo? userInfo;
 
@@ -29,27 +31,40 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     super.initState();
     userInfo = widget.userInfo;
     isShareRoom = widget.userInfo?.isShareRoom;
-    // isShareRoom = true;
+    isShareRoom = true;
 
 
-    getIsStartMatching().then((value) {
-      setState(() {
-        isStartMatching = value;
+    if (userInfo != null) {
+      print('user info = ${widget.userInfo}');
+      // 자동매칭 진행 중인지 확인
+      getIsStartMatching().then((value) {
+        setState(() {
+          isStartMatching = value;
+        });
       });
-    });
-
-    print('user info = ${widget.userInfo}');
-
+    }
   }
 
   Future<bool> getIsStartMatching() async {
 
+    late bool isStartMatching;
+
+    int? id = await LoginStorage.getUserId();
+
+    // waitingUser에 해당 user가 있는지 확인
     final response = await http.get(
-      Uri.parse('http://localhost:8080/api/waitingUser/save'),
+      Uri.parse('http://localhost:8080/api/waitingUser/${id}'),
       headers: {"Content-Type": "application/json"},
     );
+    isStartMatching = response.body.toLowerCase() == 'true';
 
-    return false;
+    if (response.statusCode == 200) {
+      isStartMatching = jsonDecode(response.body);
+
+    }
+
+    return isStartMatching;
+
   }
 
   Future<void> sendAutoMatchingRequest() async {
@@ -95,6 +110,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   }
 
   Future<void> navigateToChatRoom() async {
+
     if (userInfo == null || userInfo!.userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('User information is incomplete.')));
@@ -213,6 +229,26 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   }
 
 
+  void noticeAutoMatchingProgress() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('자동매칭 진행 중'),
+          content: Text('잠시만 기다려주세요!'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +303,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
             SizedBox(height: 50),
             if (hasSelectedService)
               Container(
-                height: 100,
+                height: 110,
                 width: double.infinity,
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -280,11 +316,11 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
                   children: [
                     Text('구독 금액',
                         style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 21,
                             fontWeight: FontWeight.bold,
                             color: Colors.black)),
                     Text(subscriptionText,
-                        style: TextStyle(fontSize: 20, color: Colors.black)),
+                        style: TextStyle(fontSize: 25, color: Color(0xffffdf24), fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -308,7 +344,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
               ),
             SizedBox(height: 60),
             ElevatedButton(
-              onPressed: isShareRoom == true ? navigateToChatRoom : (isStartMatching == true ? null : _handleAutoMatching),
+              onPressed: isShareRoom == true ? navigateToChatRoom : (isStartMatching == true ? noticeAutoMatchingProgress : _handleAutoMatching),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xffffdf24),
                 foregroundColor: Colors.black,

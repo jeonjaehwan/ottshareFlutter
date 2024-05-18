@@ -173,13 +173,15 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('OTT 공유'),
+        backgroundColor: Color(0xffffdf24),
+        centerTitle: true,
+        elevation: 0.0,
         actions: [
           if (isLoggedIn == true)
             IconButton(
                 icon: Icon(Icons.logout),
                 onPressed: logout)
         ],
-        bottom: PreferredSize(preferredSize: Size.fromHeight(1.0), child: Divider(height: 1.0, color: Colors.black)),
       ),
       body: SafeArea(
         child: <Widget>[
