@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:ott_share/models/userInfo.dart';
-import 'package:ott_share/screen/ChatRoomPage.dart';
 import 'package:ott_share/screen/OTTInfoPage.dart';
 
+import '../chatting/chatRoomPage.dart';
 import '../models/loginStorage.dart';
 
 class AutoMatchingPage extends StatefulWidget {
@@ -124,12 +124,12 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
     if (response.statusCode == 200) {
       var ottShareRoom = jsonDecode(response.body);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatRoomPage(ottShareRoom: ottShareRoom),
-        ),
-      );
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => ChatRoomPage(ottShareRoom: ottShareRoom),
+      //   ),
+      // );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to retrieve room information')));

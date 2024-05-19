@@ -1,6 +1,8 @@
+import 'chatMember.dart';
+
 class Message {
   String content;
-  String sender;
+  ChatMember sender;
   String createdAt;
 
   Message({

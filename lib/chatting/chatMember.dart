@@ -1,6 +1,6 @@
 class ChatMember {
 
-  String userId;
+  int userId;
   String name;
   bool isLeader;
   bool isChecked;
