@@ -8,7 +8,7 @@ import '../models/loginStorage.dart';
 import 'chatRoom.dart';  // Ensure this path is correct
 
 class ChatRoomPage extends StatefulWidget {
-  late final ChatRoom chatRoom;
+  final ChatRoom chatRoom;
 
 
   ChatRoomPage({Key? key, required this.chatRoom}) : super(key: key);
@@ -21,7 +21,10 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   final TextEditingController _controller = TextEditingController();
   final scrollController = ScrollController();
   late WebSocketChannel channel;
-  List<String> messages = ['하이','헬로','하하'];  // List to store messages
+  late ChatRoom chatRoom;
+  late ChatMember writer;
+  // List<String> messages = ['하이','헬로','하하'];  // List to store messages
+  late List<Message> messages;
 
   @override
   void initState() {
@@ -37,17 +40,10 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     //   });
     // });
     // loadInitialMessages();
-    ChatMember writer = ChatMember(userId: 1, name: "writer", isLeader: true, isChecked: false);
-    ChatMember reader1 = ChatMember(userId: 10, name: "reader1", isLeader: false, isChecked: false);
-    ChatMember reader2 = ChatMember(userId: 5, name: "reader2", isLeader: false, isChecked: false);
-    List<ChatMember> readers = [reader1, reader2];
-    Message message1 = Message(content: "하이하이", sender: writer, createdAt: "2024-05-19");
-    Message message2 = Message(content: "안녕하세요", sender: reader1, createdAt: "2024-05-19");
-    Message message3 = Message(content: "반갑습니다", sender: reader1, createdAt: "2024-05-19");
-    Message message4 = Message(content: "오랜만이에요", sender: reader2, createdAt: "2024-05-19");
-    List<Message> messages = [message1, message2, message3, message4];
+    chatRoom = widget.chatRoom;
+    writer = chatRoom.writer;
+    messages = chatRoom.messages;
 
-    widget.chatRoom = ChatRoom(chatRoomId: 1, writer: writer, readers: readers, messages: messages);
   }
 
   // Future<void> loadInitialMessages() async {
@@ -120,7 +116,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         elevation: 0.0,
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -133,17 +129,53 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                   controller: scrollController,
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text(messages[index]),
-                      titleTextStyle: TextStyle(
-                        fontSize: 20.0,
-                      ),
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: <Widget>[
+                            Container(
+                              height: 27,
+                              child: Text(writer.name,
+                                  textAlign: TextAlign.right, style: TextStyle(fontSize: 17.0),),
+                            ),
+                            Container(
+                              height: 45,
+                              constraints: BoxConstraints(
+                                minWidth: 50,
+                                maxWidth: MediaQuery.of(context).size.width * 0.65,
+                              ),
+                              child: ListTile(
+                                title: Text(messages[index].content, textAlign: TextAlign.right,),
+                                titleTextStyle: TextStyle(fontSize: 20.0),
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey,
+                                borderRadius: BorderRadius.circular(10.0),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          height: 45,
+                          width: 10,
+                        ),
+                        Container(
+                          height: 65,
+                          child: const CircleAvatar(
+                            radius: 23,
+                            backgroundImage: AssetImage('assets/wavve_logo.png'),
+                          ),
+                        ),
+                      ],
                     );
                   },
                   separatorBuilder: (BuildContext context, int index) {
                     return Container(
-                      height: 10,
-                      color: Colors.yellow,
+                      height: 20,
+                      // color: Colors.yellow,
                     );
                 },
                 ),

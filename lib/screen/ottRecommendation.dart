@@ -114,7 +114,7 @@ class _StartPageState extends State<StartPage> {
                       if (pageCount == 1) {
                         buttonText = '다음';
                         OttQuestionInfo? questionInfo = await sendGetQuestionRequest(pageCount);
-                        print("첫번째 질문 정보 : $questionInfo");
+                        print("첫번째 질문 정보 : ${questionInfo?.toJson()}");
                         beforeResponseBody = questionInfo;
                         setState(() => body = FirstQuestionPage(
                             key: UniqueKey(),
@@ -242,6 +242,9 @@ class _StartPageState extends State<StartPage> {
   Future<OttQuestionInfo?> sendCountOttScoreRequest(OttQuestionInfo questionInfo) async {
 
     Map<String, dynamic> requestMap = questionInfo.toJson();
+    requestMap.addAll({"isFirstQuestion" : isFirstQuestion});
+
+    print(requestMap);
 
     await http.post(
       Uri.parse('http://localhost:8080/api/ottRecQuestions/${pageCount}'),
@@ -249,8 +252,10 @@ class _StartPageState extends State<StartPage> {
         "Content-Encoding": "utf-8",
         "Content-Type": "application/json"
       },
-      body: jsonEncode(requestMap),
+      body:  jsonEncode(requestMap),
     );
+
+
   }
 
   Future<String?> sendGetResultRequest() async {

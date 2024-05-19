@@ -43,6 +43,7 @@ class _LoginPageState extends State<LoginPage> {
         body: jsonEncode(data),
       );
 
+
       if (response.statusCode == 200) {
         final userInfoJson = jsonDecode(response.body);
         UserInfo userInfo = UserInfo.fromJson(userInfoJson);
@@ -94,6 +95,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } catch (error) {
+      print(error);
       showDialog(
         context: context,
         builder: (BuildContext context) {
