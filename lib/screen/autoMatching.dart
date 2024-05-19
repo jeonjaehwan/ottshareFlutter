@@ -4,7 +4,10 @@ import 'package:http/http.dart' as http;
 import 'package:ott_share/models/userInfo.dart';
 import 'package:ott_share/screen/OTTInfoPage.dart';
 
+import '../chatting/chatMember.dart';
+import '../chatting/chatRoom.dart';
 import '../chatting/chatRoomPage.dart';
+import '../chatting/message.dart';
 import '../models/loginStorage.dart';
 
 class AutoMatchingPage extends StatefulWidget {
@@ -117,23 +120,38 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       return;
     }
 
-    var url =
-        Uri.parse('http://localhost:8080/api/ottShareRoom/${userInfo!.userId}');
-    var response =
-        await http.get(url, headers: {"Content-Type": "application/json"});
+    try {
+      var url =
+      Uri.parse('http://localhost:8080/api/ottShareRoom/${userInfo!.userId}');
+      var response = await http.get(url, headers: {"Content-Type": "application/json"});
 
-    if (response.statusCode == 200) {
-      var ottShareRoom = jsonDecode(response.body);
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => ChatRoomPage(ottShareRoom: ottShareRoom),
-      //   ),
-      // );
-    } else {
+      ChatMember writer = ChatMember(userId: 1, name: "writer", isLeader: true, isChecked: false);
+      ChatMember reader1 = ChatMember(userId: 10, name: "reader1", isLeader: false, isChecked: false);
+      ChatMember reader2 = ChatMember(userId: 5, name: "reader2", isLeader: false, isChecked: false);
+      List<ChatMember> readers = [reader1, reader2];
+      Message message1 = Message(content: "하이하이", sender: writer, createdAt: "2024-05-19");
+      Message message2 = Message(content: "안녕하세요", sender: reader1, createdAt: "2024-05-19");
+      Message message3 = Message(content: "반갑습니다", sender: reader1, createdAt: "2024-05-19");
+      Message message4 = Message(content: "오랜만이에요", sender: reader2, createdAt: "2024-05-19");
+      List<Message> messages = [message1, message2, message3, message4];
+
+      ChatRoom chatRoom = ChatRoom(chatRoomId: 1, writer: writer, readers: readers, messages: messages);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatRoomPage(chatRoom: chatRoom),
+        ),
+      );
+
+    } catch (e) {
+      print(e);
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to retrieve room information')));
     }
+
+
+
   }
 
   Widget ottBox(String assetName, String label, int index) {

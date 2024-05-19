@@ -14,6 +14,9 @@ import 'package:ott_share/screen/myPage.dart';
 import 'package:http/http.dart' as http;
 
 import 'api/google_signin_api.dart';
+import 'chatting/chatMember.dart';
+import 'chatting/chatRoom.dart';
+import 'chatting/message.dart';
 import 'models/userInfo.dart';
 
 void main() async {
@@ -160,9 +163,26 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+
   // 메인 위젯
   @override
   Widget build(BuildContext context) {
+
+    // 임시 데이터
+    ChatMember writer = ChatMember(userId: 1, name: "writer", isLeader: true, isChecked: false);
+    ChatMember reader1 = ChatMember(userId: 10, name: "reader1", isLeader: false, isChecked: false);
+    ChatMember reader2 = ChatMember(userId: 5, name: "reader2", isLeader: false, isChecked: false);
+    List<ChatMember> readers = [reader1, reader2];
+    Message message1 = Message(content: "하이하이", sender: writer, createdAt: "2024-05-19");
+    Message message2 = Message(content: "안녕하세요", sender: reader1, createdAt: "2024-05-19");
+    Message message3 = Message(content: "반갑습니다", sender: reader1, createdAt: "2024-05-19");
+    Message message4 = Message(content: "오랜만이에요", sender: reader2, createdAt: "2024-05-19");
+    List<Message> messages = [message1, message2, message3, message4];
+
+    ChatRoom chatRoom = ChatRoom(chatRoomId: 1, writer: writer, readers: readers, messages: messages);
+
+
+
 
     String titleText = '';
 
@@ -199,7 +219,7 @@ class _HomePageState extends State<HomePage> {
         child: <Widget>[
           AutoMatchingPage(userInfo: widget.userInfo),
           OttRecommendationPage(),
-          // ChatRoomPage(ottShareRoom: "dd"), //임시 페이지
+          ChatRoomPage(chatRoom: chatRoom), //임시 페이지
           MyPage(userInfo: widget.userInfo, selectedIndex : 3),
         ].elementAt(_selectedIndex),
       ),
