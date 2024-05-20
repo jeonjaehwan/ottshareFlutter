@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:ott_share/screen/FindPassword.dart';
 import 'package:ott_share/screen/FindId.dart';
 import 'package:ott_share/screen/Login.dart';
+import 'package:ott_share/screen/OTTInfoPage.dart';
 import 'package:ott_share/screen/SignUp.dart';
 import 'package:ott_share/screen/autoMatching.dart';
 import 'package:ott_share/chatting/chatRoomPage.dart';
@@ -35,40 +39,54 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
+    return MaterialApp.router(
+        debugShowCheckedModeBanner: false,
       title: 'OTT 공유 앱',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      initialRoute: '/',
-      onGenerateRoute: (settings) {
-        if (settings.name == '/autoMatching') {
-          final args = settings.arguments as Map<String, dynamic>? ?? {};
-          return MaterialPageRoute(
-            builder: (context) => HomePage(
-                selectedIndex: args['selectedIndex']),
-          );
-        } else if (settings.name == '/home') {
-          final args = settings.arguments as Map<String, dynamic>? ?? {};
-          return MaterialPageRoute(
-            builder: (context) => HomePage(
-              userInfo: args['userInfo'] as UserInfo?,
-              isLoggedIn: args['isLoggedIn'] as bool,
-            ),
-          );
-        }
-      },
-      routes: {
-        // '/': (context) => HomePage(),
-        '/signUp': (context) => SignUpPage(),
-        '/users/login': (context) => LoginPage(),
-        '/findId': (context) => FindIdPage(),
-        '/findPassword': (context) => FindPasswordPage(),
-        '/ottRecommendation' : (context) => OttRecommendationPage(),
-      },
-      home: HomePage(),
-    );
+      routerConfig: GoRouter(
+          initialLocation: "/",
+      routes : [
+        GoRoute(
+          path: "/",
+          builder: (context, state) => HomePage(),
+        ),
+        GoRoute(path: "/signUp", builder: (context, state) => SignUpPage()),
+        GoRoute(path: "/users/login", builder: (context, state) => LoginPage()),
+        GoRoute(path: "/findId", builder: (context, state) => FindIdPage()),
+        GoRoute(path: "/findPassword", builder: (context, state) => FindPasswordPage()),
+        GoRoute(path: "/ottRecommendation", builder: (context, state) => OttRecommendationPage()),
+        GoRoute(
+          path: "/autoMatching",
+          builder: (context, state) {
+            int selectedIndex =  int.parse(state.uri.queryParameters['selectedIndex']!);
+            return HomePage(selectedIndex: selectedIndex);
+          }
+        ),
+        GoRoute(
+          path: "/home",
+          builder: (context, state) {
+            bool isLoggedIn = bool.parse(state.uri.queryParameters['isLoggedIn']!);
+            UserInfo userInfo = state.extra as UserInfo;
+            return HomePage (isLoggedIn: isLoggedIn, userInfo: userInfo);
+          }),
+        GoRoute(
+            path: "/ottInfo",
+            builder: (context, state) {
+              int selectedOttIndex = int.parse(state.uri.queryParameters['selectedOttIndex']!);
+              bool isLeader = bool.parse(state.uri.queryParameters['isLeader']!);
+              UserInfo userInfo = state.extra as UserInfo;
+              return OTTInfoPage (selectedOttIndex: selectedOttIndex, isLeader: isLeader, userInfo: userInfo);
+            }),
+        GoRoute(
+            path: "/chatRoom",
+            builder: (context, state) {
+              var currentUserInfoJson = state.uri.queryParameters['currentUserInfoJson']!;
+              ChatRoom chatRoom = state.extra as ChatRoom;
+              return ChatRoomPage (currentUserInfoJson: currentUserInfoJson, chatRoom: chatRoom);
+            })
+      ]));
   }
 }
 
@@ -111,14 +129,15 @@ class _HomePageState extends State<HomePage> {
     if (index == 3) { // 로그인/로그아웃 탭 인덱스, 필요에 따라 조정하세요.
       if (isLoggedIn == false) {
         // 로그인 페이지로 이동하고 결과를 기다립니다.
-        final result = await Navigator.pushNamed(context, '/users/login');
-        // 로그인 페이지에서 반환된 결과를 기반으로 상태를 업데이트합니다.
-        if (result is Map<String, dynamic>) {
-          setState(() {
-            isLoggedIn = result['isLoggedIn'] ?? false;
-            userInfo = result['userInfo'] as UserInfo?;
-          });
-        }
+        context.push('/users/login').then((result) {
+          // 로그인 페이지에서 반환된 결과를 기반으로 상태를 업데이트합니다.
+          if (result is Map<String, dynamic>) {
+            setState(() {
+              isLoggedIn = bool.parse(result['isLoggedIn']) ?? false;
+              userInfo = result['userInfo'] as UserInfo?;
+            });
+          }
+        });
       } else {
         // 마이페이지 이동 로직
         setState(() {
@@ -149,10 +168,7 @@ class _HomePageState extends State<HomePage> {
               onPressed: () {
                 Navigator.pop(context); // 다이얼로그 닫기
                 // Navigator.pop(context, {'isLoggedIn': true, 'userInfo': userInfo}); // 로그인 페이지 닫고 성공 여부 반환
-                Navigator.pushReplacementNamed(
-                  context,
-                  '/',
-                );
+                context.go('/');
               },
 
               child: Text('확인'),
@@ -169,9 +185,9 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
 
     // 임시 데이터
-    ChatMember writer = ChatMember(userId: 1, name: "writer", isLeader: true, isChecked: false);
-    ChatMember reader1 = ChatMember(userId: 10, name: "reader1", isLeader: false, isChecked: false);
-    ChatMember reader2 = ChatMember(userId: 5, name: "reader2", isLeader: false, isChecked: false);
+    ChatMember writer = ChatMember(userId: 1, nickname: "writer", isLeader: true, isChecked: false);
+    ChatMember reader1 = ChatMember(userId: 10, nickname: "reader1", isLeader: false, isChecked: false);
+    ChatMember reader2 = ChatMember(userId: 5, nickname: "reader2", isLeader: false, isChecked: false);
     List<ChatMember> readers = [reader1, reader2];
     Message message1 = Message(content: "하이하이", sender: writer, createdAt: "2024-05-19");
     Message message2 = Message(content: "안녕하세요", sender: reader1, createdAt: "2024-05-19");
@@ -179,8 +195,7 @@ class _HomePageState extends State<HomePage> {
     Message message4 = Message(content: "오랜만이에요", sender: reader2, createdAt: "2024-05-19");
     List<Message> messages = [message1, message2, message3, message4];
 
-    ChatRoom chatRoom = ChatRoom(chatRoomId: 1, writer: writer, readers: readers, messages: messages);
-
+    ChatRoom chatRoom = ChatRoom(chatRoomId: 1, writer: writer, readers: readers, ottType: 'dd', ottId: 'dd', ottPassword: 'dd');
 
 
 
@@ -202,6 +217,7 @@ class _HomePageState extends State<HomePage> {
       BottomNavigationBarItem(icon: isLoggedIn == true ? Icon(Icons.person) : Icon(Icons.login), label: isLoggedIn == true ? '마이페이지' : '로그인'),
     ];
 
+
     return Scaffold(
       appBar: AppBar(
         title: Text(titleText),
@@ -219,7 +235,7 @@ class _HomePageState extends State<HomePage> {
         child: <Widget>[
           AutoMatchingPage(userInfo: widget.userInfo),
           OttRecommendationPage(),
-          ChatRoomPage(chatRoom: chatRoom), //임시 페이지
+          // ChatRoomPage(ottShareRoom: ottShareRoom, chatRoom: chatRoom), //임시 페이지
           MyPage(userInfo: widget.userInfo, selectedIndex : 3),
         ].elementAt(_selectedIndex),
       ),

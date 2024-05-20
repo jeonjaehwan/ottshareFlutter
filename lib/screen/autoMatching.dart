@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:ott_share/models/userInfo.dart';
@@ -28,13 +29,11 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
 
 
-
   @override
   void initState() {
     super.initState();
     userInfo = widget.userInfo;
     isShareRoom = widget.userInfo?.isShareRoom;
-    isShareRoom = true;
 
 
     if (userInfo != null) {
@@ -124,25 +123,18 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       var url =
       Uri.parse('http://localhost:8080/api/ottShareRoom/${userInfo!.userId}');
       var response = await http.get(url, headers: {"Content-Type": "application/json"});
+      var json = jsonDecode(response.body);
+      late dynamic currentUserInfoJson;
 
-      ChatMember writer = ChatMember(userId: 1, name: "writer", isLeader: true, isChecked: false);
-      ChatMember reader1 = ChatMember(userId: 10, name: "reader1", isLeader: false, isChecked: false);
-      ChatMember reader2 = ChatMember(userId: 5, name: "reader2", isLeader: false, isChecked: false);
-      List<ChatMember> readers = [reader1, reader2];
-      Message message1 = Message(content: "하이하이", sender: writer, createdAt: "2024-05-19");
-      Message message2 = Message(content: "안녕하세요", sender: reader1, createdAt: "2024-05-19");
-      Message message3 = Message(content: "반갑습니다", sender: reader1, createdAt: "2024-05-19");
-      Message message4 = Message(content: "오랜만이에요", sender: reader2, createdAt: "2024-05-19");
-      List<Message> messages = [message1, message2, message3, message4];
+      ChatRoom chatRoom = ChatRoom.fromJson(json, userInfo!);
 
-      ChatRoom chatRoom = ChatRoom(chatRoomId: 1, writer: writer, readers: readers, messages: messages);
+      for (var user in json['ottRoomMemberResponses']) {
+        if (user['user']['id'] == userInfo!.userId) {
+          currentUserInfoJson = user;
+        }
+      }
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatRoomPage(chatRoom: chatRoom),
-        ),
-      );
+      context.push("/chatRoom?currentUserInfoJson=$currentUserInfoJson", extra: chatRoom);
 
     } catch (e) {
       print(e);
@@ -221,22 +213,18 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   }
 
   void _handleAutoMatching() {
-    if (selectedOttIndex != null && isLeader != null) {
+    if (userInfo == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('로그인 해주세요.')));
+    } else if (selectedOttIndex != null && isLeader != null) {
       if (isLeader!) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => OTTInfoPage(
-                  selectedOttIndex: selectedOttIndex ?? 0,
-                  isLeader: isLeader ?? false,
-                  userInfo: userInfo)),
-        ).then(
-          (value) {
+        context.push("/ottInfo?selectedOttIndex=0&isLeader=false", extra: userInfo).then((result) {
+          if (result is Map<String, dynamic>) {
             setState(() {
-              isStartMatching = value;
+              isStartMatching = bool.parse(result['isStartMatching']);
             });
-          },
-        );
+          }
+        });
       } else {
         sendAutoMatchingRequest();
       }
@@ -257,7 +245,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                context.pop();
               },
               child: Text('확인'),
             ),
@@ -378,4 +366,6 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       ),
     );
   }
+
+
 }

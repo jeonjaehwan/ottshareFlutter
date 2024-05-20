@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -58,16 +59,8 @@ class _LoginPageState extends State<LoginPage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/home',
-                      ModalRoute.withName('/home'),
-                      arguments: {
-                        'selectedIndex': 0,
-                        'isLoggedIn': true,
-                        'userInfo': userInfo,
-                      },
-                    );
+                    context.pop();
+                    context.go("/home?isLoggedIn=true", extra: userInfo);
                   },
                   child: Text('확인'),
                 ),
@@ -160,21 +153,21 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/findId'); // 아이디 찾기
+                      context.push('/findId');
                     },
                     child: Text('아이디 찾기'),
                   ),
                   SizedBox(width: 12),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/findPassword'); // 비밀번호 찾기
+                      context.push('/findPassword');
                     },
                     child: Text('비밀번호 찾기'),
                   ),
                   SizedBox(width: 12),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/signUp'); // 회원가입
+                      context.push('/signUp');
                     },
                     child: Text('회원가입'),
                   ),
@@ -290,18 +283,8 @@ class _LoginPageState extends State<LoginPage> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // 다이얼로그 닫기
-                  // Navigator.pop(context, {'isLoggedIn': true});
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/home',
-                    ModalRoute.withName('/home'),
-                    arguments: {
-                      'selectedIndex': 0,
-                      'isLoggedIn': true,
-                      'userInfo': userInfo,
-                    },
-                  );
+                  context.pop(); // 다이얼로그 닫기
+                  context.go("/home?userInfo=${userInfo}&isLoggedIn=true");
                 },
                 child: Text('확인'),
               ),
@@ -339,17 +322,8 @@ class _LoginPageState extends State<LoginPage> {
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pop(context); // 다이얼로그 닫기
-                      // Navigator.pop(context, {'isLoggedIn': true});
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/home',
-                        ModalRoute.withName('/home'),
-                        arguments: {
-                          'selectedIndex': 0,
-                          'isLoggedIn': true,
-                        },
-                      );
+                      context.pop(); // 다이얼로그 닫기
+                      context.go("/home?selectedIndex=0&isLoggedIn=true");
                     },
                     child: Text('확인'),
                   ),
@@ -385,16 +359,8 @@ class _LoginPageState extends State<LoginPage> {
                   actions: [
                     TextButton(
                       onPressed: () {
-                        Navigator.pop(context); // 다이얼로그 닫기
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/home',
-                          ModalRoute.withName('/home'),
-                          arguments: {
-                            'selectedIndex': 0,
-                            'isLoggedIn': true,
-                          },
-                        );
+                        context.pop(); // 다이얼로그 닫기
+                        context.go("/home?selectedIndex=0&isLoggedIn=true");
                       },
                       child: Text('확인'),
                     ),
@@ -426,17 +392,8 @@ class _LoginPageState extends State<LoginPage> {
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pop(context); // 다이얼로그 닫기
-                      // Navigator.pop(context, {'isLoggedIn': true}); // 로그인 페이지 닫고 성공 여부 반환
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/home',
-                        ModalRoute.withName('/home'),
-                        arguments: {
-                          'selectedIndex': 0,
-                          'isLoggedIn': true,
-                        },
-                      );
+                      context.pop(); // 다이얼로그 닫기
+                      context.go("/home?selectedIndex=0&isLoggedIn=true");
                     },
                     child: Text('확인'),
                   ),

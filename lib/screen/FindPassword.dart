@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -50,8 +51,8 @@ class _FindPasswordPageState extends State<FindPasswordPage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pop(context);
+                    context.pop();
+                    context.pop();
                   },
                   child: Text('확인'),
                 ),
@@ -68,7 +69,7 @@ class _FindPasswordPageState extends State<FindPasswordPage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
+                    context.pop();
                   },
                   child: Text('확인'),
                 ),
@@ -88,7 +89,7 @@ class _FindPasswordPageState extends State<FindPasswordPage> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  context.pop();
                 },
                 child: Text('확인'),
               ),

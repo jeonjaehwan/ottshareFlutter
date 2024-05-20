@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:ott_share/models/OttQuestionInfo.dart';
 
@@ -134,8 +135,7 @@ class _StartPageState extends State<StartPage> {
                         setState(() {
                           _selectedIndex = 3;
                         });
-                        Navigator.pushReplacementNamed(
-                            context, '/autoMatching', arguments: {'selectedIndex': 0});
+                        context.go("/autoMatching?selectedIndex=$_selectedIndex");
                       }
                       else {
                         if (isQuestionSelected) {
@@ -184,7 +184,7 @@ class _StartPageState extends State<StartPage> {
                                 actions: [
                                   TextButton(
                                     onPressed: () {
-                                      Navigator.of(context).pop();
+                                      context.pop();
                                     },
                                     child: Text('확인'),
                                   ),
