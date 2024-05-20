@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -69,7 +70,7 @@ class _SignupPageState extends State<SignUpPage> {
 
       if (response.statusCode == 200) {
         // 회원가입 성공
-        Navigator.pop(context);
+        context.pop();
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -79,7 +80,7 @@ class _SignupPageState extends State<SignUpPage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
+                    context.pop();
                   },
                   child: Text('확인'),
                 ),
@@ -89,7 +90,6 @@ class _SignupPageState extends State<SignUpPage> {
         );
       } else {
         // 회원가입 실패
-
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -98,7 +98,7 @@ class _SignupPageState extends State<SignUpPage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
+                    context.pop();
                   },
                   child: Text('확인'),
                 ),
@@ -118,7 +118,7 @@ class _SignupPageState extends State<SignUpPage> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  context.pop();
                 },
                 child: Text('확인'),
               ),
@@ -225,7 +225,7 @@ class _SignupPageState extends State<SignUpPage> {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      context.pop();
                     },
                     child: Text('취소'),
                   ),

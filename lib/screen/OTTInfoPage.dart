@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
@@ -64,7 +65,7 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
     );
 
     if (response.statusCode == 200) {
-      Navigator.pop(context, true);
+      context.pop(true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('자동 매칭 실패')));

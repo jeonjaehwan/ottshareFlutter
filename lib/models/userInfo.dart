@@ -29,6 +29,8 @@ class UserInfo {
 
 
 
+
+
   factory UserInfo.fromJson(Map<String, dynamic> json) {
     return UserInfo(
       userId: json['userId'] as int? ?? 0, // Long 대신 int를 사용하고, 기본값을 제공합니다.
