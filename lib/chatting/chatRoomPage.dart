@@ -1,12 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ott_share/chatting/chatMember.dart';
-import 'package:ott_share/chatting/drawer.dart';
+import 'package:stomp_dart_client/stomp_dart_client.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:anydrawer/anydrawer.dart';
 import 'package:http/http.dart' as http;
-import '../models/loginStorage.dart';
 import 'chatRoom.dart';
 
 class ChatRoomPage extends StatefulWidget {
@@ -21,19 +21,18 @@ class ChatRoomPage extends StatefulWidget {
 }
 
 class _ChatRoomPageState extends State<ChatRoomPage> {
-  final TextEditingController _controller = TextEditingController();
+  late final WebSocketChannel channel;
+  final TextEditingController textController  = TextEditingController();
   final scrollController = ScrollController();
-  final AnyDrawerController controller = AnyDrawerController();
-  late WebSocketChannel channel;
-  late ChatRoom chatRoom;
-  late ChatMember writer;
-  List<String> messages = ['하이', '헬로', '하하']; // List to store messages
+  late ChatRoom chatRoom = widget.chatRoom;
+  late ChatMember writer = chatRoom.writer;
+  List<String> messages = []; // List to store messages
   // late List<Message> messages;
 
   @override
   void initState() {
     super.initState();
-    String websocketURL = 'ws://localhost:8080/websocket';
+    String websocketURL = 'ws://127.0.0.1:8080/websocket';
     channel = WebSocketChannel.connect(Uri.parse(websocketURL));
     channel.stream.listen((message) {
       setState(() {
@@ -46,8 +45,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       });
     });
     loadInitialMessages();
-    chatRoom = widget.chatRoom;
-    writer = chatRoom.writer;
     // messages = chatRoom.messages;
   }
 
@@ -64,7 +61,10 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Future<List<dynamic>> fetchMessages() async {
     final response = await http.get(Uri.parse(
-        'http://localhost:8080/chat/${chatRoom.chatRoomId}/messages'));
+        'http://localhost:8080/chat/${chatRoom.chatRoomId}/messages'),
+    headers: <String, String>{"Accept-Encoding": "utf-8"},);
+
+    print("fetchMessages = $response");
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
@@ -74,8 +74,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     }
   }
 
-  void _sendMessage() async {
-    if (_controller.text.isNotEmpty) {
+  Future<void> _sendMessage() async {
+    if (textController.text.isNotEmpty) {
       // int? currentUserId = await LoginStorage.getUserId();
       // if (currentUserId == null) {
       //   print("No user logged in.");
@@ -86,50 +86,25 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
       var messageRequest = {
         'ottRoomMemberResponse': widget.currentUserInfoJson,
-        'message': _controller.text
+        'message': textController.text
       };
 
-      var stompFrame = 'SEND\n'
-              'content-type:application/json;charset=UTF-8\n\n' +
-          jsonEncode(messageRequest) +
-          '\u0000';
+      var stompFrame = jsonEncode({
+        "destination": "/app/chat/${chatRoom.chatRoomId}",
+        "content-type": "application/json;charset=UTF-8",
+        "body": jsonEncode(messageRequest)
+      });
 
       channel.sink.add(stompFrame);
+
       setState(() {
-        messages.add(_controller.text); // Add message at the end
+        messages.add(textController.text); // Add message at the end
         if (messages.length > 10) {
           messages.removeAt(0); // Maintain only the latest 10 messages
         }
       });
-      _controller.clear();
+      textController.clear();
     }
-  }
-
-  Widget chatBox = Row(
-
-  );
-
-  void _showDrawer() {
-    showDrawer(
-      context,
-      builder: (context) => const CheckDrawer(),
-      config: const DrawerConfig(
-        side: DrawerSide.right,
-        closeOnClickOutside: true,
-        closeOnEscapeKey: true,
-        closeOnResume: true, // (Android only)
-        closeOnBackButton: true, // (Requires a route navigator)
-        backdropOpacity: 0.5,
-        borderRadius: 24,
-      ),
-      onClose: () {
-        debugPrint('Drawer closed');
-      },
-      onOpen: () {
-        debugPrint('Drawer opened');
-      },
-      controller: controller,
-    );
   }
 
 
@@ -144,90 +119,82 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           backgroundColor: Color(0xffffdf24),
           centerTitle: true,
           elevation: 0.0,
-          actions: [
-            IconButton(
-              icon: Icon(Icons.menu),
-              onPressed: () {
-                _showDrawer;
-              },
-            ),
-          ],
         ),
         body: Column(
           children: <Widget>[
             Expanded(
                 child: Padding(
-              padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ListView.separated(
-                  reverse: true,
-                  shrinkWrap: true,
-                  controller: scrollController,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        Column(
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ListView.separated(
+                      reverse: true,
+                      shrinkWrap: true,
+                      controller: scrollController,
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: <Widget>[
-                            Container(
-                              child: Text(
-                                writer.nickname,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(fontSize: 17.0),
-                              ),
+                            Column(
+                              mainAxisSize: MainAxisSize.max,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: <Widget>[
+                                Container(
+                                  child: Text(
+                                    writer.nickname,
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(fontSize: 17.0),
+                                  ),
+                                ),
+                                Container(
+                                  constraints: BoxConstraints(
+                                    maxWidth: MediaQuery.of(context).size.width * 0.65,
+                                    maxHeight: 300,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Text(
+                                      messages[index],
+                                      textAlign: TextAlign.left, style: TextStyle(fontSize: 20.0),
+                                      softWrap: true,
+                                      maxLines: null,
+                                      overflow: TextOverflow.visible,
+                                    ),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(15.0),
+                                  ),
+                                ),
+                              ],
                             ),
                             Container(
-                              constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.65,
-                                maxHeight: 300,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Text(
-                                  messages[index],
-                                  textAlign: TextAlign.left, style: TextStyle(fontSize: 20.0),
-                                  softWrap: true,
-                                  maxLines: null,
-                                  overflow: TextOverflow.visible,
-                                ),
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(15.0),
+                              height: 45,
+                              width: 10,
+                            ),
+                            Container(
+                              height: 65,
+                              child: const CircleAvatar(
+                                radius: 23,
+                                backgroundImage:
+                                AssetImage('assets/wavve_logo.png'),
                               ),
                             ),
                           ],
-                        ),
-                        Container(
-                          height: 45,
-                          width: 10,
-                        ),
-                        Container(
-                          height: 65,
-                          child: const CircleAvatar(
-                            radius: 23,
-                            backgroundImage:
-                                AssetImage('assets/wavve_logo.png'),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                  separatorBuilder: (BuildContext context, int index) {
-                    return Container(
-                      height: 20,
-                      // color: Colors.yellow,
-                    );
-                  },
-                ),
-              ),
-            )),
+                        );
+                      },
+                      separatorBuilder: (BuildContext context, int index) {
+                        return Container(
+                          height: 20,
+                          // color: Colors.yellow,
+                        );
+                      },
+                    ),
+                  ),
+                )),
             TextField(
-              controller: _controller,
+              controller: textController,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
@@ -237,15 +204,20 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               onSubmitted: (_) => _sendMessage(),
               maxLines: null,
             ),
-
           ],
+        ),
+        endDrawer: Drawer(
+          child: ListView(
 
-        ));
+          ),
+        )
+    );
   }
 
   @override
   void dispose() {
-    controller.dispose();
+    textController.dispose();
+    scrollController.dispose();
     channel.sink.close();
     super.dispose();
   }

@@ -29,7 +29,7 @@ void main() async {
     nativeAppKey: 'b8d545024ec99b8ad44c04b522cab54f',
     javaScriptAppKey: 'a883fcabacb6ce410161d059b4dd1e75',
   );
-  WidgetsFlutterBinding.ensureInitialized();  // 이 줄이 필수적으로 필요할 수 있습니다.
+  WidgetsFlutterBinding.ensureInitialized(); // 이 줄이 필수적으로 필요할 수 있습니다.
   await LoginStorage.init();
   runApp(MyApp());
 }
@@ -41,70 +41,77 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
         debugShowCheckedModeBanner: false,
-      title: 'OTT 공유 앱',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      routerConfig: GoRouter(
-          initialLocation: "/",
-      routes : [
-        GoRoute(
-          path: "/",
-          builder: (context, state) => HomePage(),
-        ),
-        GoRoute(path: "/signUp", builder: (context, state) => SignUpPage()),
-        GoRoute(path: "/users/login", builder: (context, state) => LoginPage()),
-        GoRoute(path: "/findId", builder: (context, state) => FindIdPage()),
-        GoRoute(path: "/findPassword", builder: (context, state) => FindPasswordPage()),
-        GoRoute(path: "/ottRecommendation", builder: (context, state) => OttRecommendationPage()),
-        GoRoute(
-          path: "/autoMatching",
-          builder: (context, state) {
-            int selectedIndex =  int.parse(state.uri.queryParameters['selectedIndex']!);
-            return HomePage(selectedIndex: selectedIndex);
-          }
-        ),
-        GoRoute(
-          path: "/home",
-          builder: (context, state) {
-            bool isLoggedIn = bool.parse(state.uri.queryParameters['isLoggedIn']!);
-            UserInfo userInfo = state.extra as UserInfo;
-            return HomePage (isLoggedIn: isLoggedIn, userInfo: userInfo);
-          }),
-        GoRoute(
-            path: "/ottInfo",
-            builder: (context, state) {
-              int selectedOttIndex = int.parse(state.uri.queryParameters['selectedOttIndex']!);
-              bool isLeader = bool.parse(state.uri.queryParameters['isLeader']!);
-              UserInfo userInfo = state.extra as UserInfo;
-              return OTTInfoPage (selectedOttIndex: selectedOttIndex, isLeader: isLeader, userInfo: userInfo);
-            }),
-        GoRoute(
-            path: "/chatRoom",
-            builder: (context, state) {
-              var currentUserInfoJson = state.uri.queryParameters['currentUserInfoJson']!;
-              ChatRoom chatRoom = state.extra as ChatRoom;
-              return ChatRoomPage (currentUserInfoJson: currentUserInfoJson, chatRoom: chatRoom);
-            })
-      ]));
+        title: 'OTT 공유 앱',
+        routerConfig: GoRouter(initialLocation: "/", routes: [
+          GoRoute(
+            path: "/",
+            builder: (context, state) => HomePage(),
+          ),
+          GoRoute(path: "/signUp", builder: (context, state) => SignUpPage()),
+          GoRoute(
+              path: "/users/login", builder: (context, state) => LoginPage()),
+          GoRoute(path: "/findId", builder: (context, state) => FindIdPage()),
+          GoRoute(
+              path: "/findPassword",
+              builder: (context, state) => FindPasswordPage()),
+          GoRoute(
+              path: "/autoMatching",
+              builder: (context, state) {
+                int selectedIndex =
+                    int.parse(state.uri.queryParameters['selectedIndex']!);
+                return HomePage(selectedIndex: selectedIndex);
+              }),
+          GoRoute(
+              path: "/home",
+              builder: (context, state) {
+                bool isLoggedIn =
+                    bool.parse(state.uri.queryParameters['isLoggedIn']!);
+                UserInfo userInfo = state.extra as UserInfo;
+                return HomePage(isLoggedIn: isLoggedIn, userInfo: userInfo);
+              }),
+          GoRoute(
+              path: "/ottInfo",
+              builder: (context, state) {
+                int selectedOttIndex =
+                    int.parse(state.uri.queryParameters['selectedOttIndex']!);
+                bool isLeader =
+                    bool.parse(state.uri.queryParameters['isLeader']!);
+                UserInfo userInfo = state.extra as UserInfo;
+                return OTTInfoPage(
+                    selectedOttIndex: selectedOttIndex,
+                    isLeader: isLeader,
+                    userInfo: userInfo);
+              }),
+          GoRoute(
+              path: "/chatRoom",
+              builder: (context, state) {
+                var currentUserInfoJson =
+                    state.uri.queryParameters['currentUserInfoJson']!;
+                ChatRoom chatRoom = state.extra as ChatRoom;
+                return ChatRoomPage(
+                    currentUserInfoJson: currentUserInfoJson,
+                    chatRoom: chatRoom);
+              }),
+        ]),
+    );
   }
 }
 
-class HomePage extends StatefulWidget {
 
+class HomePage extends StatefulWidget {
   final UserInfo? userInfo;
   final int? selectedIndex;
   final bool? isLoggedIn; // 로그인 상태
 
-
-  HomePage({Key? key, this.userInfo, this.selectedIndex, this.isLoggedIn}) : super(key: key);
+  HomePage({Key? key, this.userInfo, this.selectedIndex, this.isLoggedIn})
+      : super(key: key);
 
   @override
-  State<HomePage> createState() => _HomePageState(userInfo: userInfo, isLoggedIn: isLoggedIn);
+  State<HomePage> createState() =>
+      _HomePageState(userInfo: userInfo, isLoggedIn: isLoggedIn);
 }
 
 class _HomePageState extends State<HomePage> {
-
   late UserInfo? userInfo;
   late bool? isLoggedIn;
   int _selectedIndex = 0;
@@ -118,15 +125,13 @@ class _HomePageState extends State<HomePage> {
     isLoggedIn = widget.isLoggedIn ?? false;
   }
 
-  static const TextStyle optionStyle = TextStyle(
-      fontSize: 30,
-      fontWeight: FontWeight.bold
-  );
-
+  static const TextStyle optionStyle =
+      TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
 
   void _onItemTapped(int index) async {
     // '로그인/로그아웃' 버튼을 탭했을 때의 로직
-    if (index == 3) { // 로그인/로그아웃 탭 인덱스, 필요에 따라 조정하세요.
+    if (index == 3) {
+      // 로그인/로그아웃 탭 인덱스, 필요에 따라 조정하세요.
       if (isLoggedIn == false) {
         // 로그인 페이지로 이동하고 결과를 기다립니다.
         context.push('/users/login').then((result) {
@@ -170,7 +175,6 @@ class _HomePageState extends State<HomePage> {
                 // Navigator.pop(context, {'isLoggedIn': true, 'userInfo': userInfo}); // 로그인 페이지 닫고 성공 여부 반환
                 context.go('/');
               },
-
               child: Text('확인'),
             ),
           ],
@@ -179,24 +183,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   // 메인 위젯
   @override
   Widget build(BuildContext context) {
-
-    // 임시 데이터
-    ChatMember writer = ChatMember(userId: 1, nickname: "writer", isLeader: true, isChecked: false);
-    ChatMember reader1 = ChatMember(userId: 10, nickname: "reader1", isLeader: false, isChecked: false);
-    ChatMember reader2 = ChatMember(userId: 5, nickname: "reader2", isLeader: false, isChecked: false);
-    List<ChatMember> readers = [reader1, reader2];
-    Message message1 = Message(content: "하이하이", sender: writer, createdAt: "2024-05-19");
-    Message message2 = Message(content: "안녕하세요", sender: reader1, createdAt: "2024-05-19");
-    Message message3 = Message(content: "반갑습니다", sender: reader1, createdAt: "2024-05-19");
-    Message message4 = Message(content: "오랜만이에요", sender: reader2, createdAt: "2024-05-19");
-    List<Message> messages = [message1, message2, message3, message4];
-
-    ChatRoom chatRoom = ChatRoom(chatRoomId: 1, writer: writer, readers: readers, ottType: 'dd', ottId: 'dd', ottPassword: 'dd');
-
 
 
     String titleText = '';
@@ -214,9 +203,10 @@ class _HomePageState extends State<HomePage> {
       BottomNavigationBarItem(icon: Icon(Icons.share), label: '자동매칭'),
       BottomNavigationBarItem(icon: Icon(Icons.movie_filter), label: 'OTT 추천'),
       BottomNavigationBarItem(icon: Icon(Icons.chat), label: '채팅방 기록'),
-      BottomNavigationBarItem(icon: isLoggedIn == true ? Icon(Icons.person) : Icon(Icons.login), label: isLoggedIn == true ? '마이페이지' : '로그인'),
+      BottomNavigationBarItem(
+          icon: isLoggedIn == true ? Icon(Icons.person) : Icon(Icons.login),
+          label: isLoggedIn == true ? '마이페이지' : '로그인'),
     ];
-
 
     return Scaffold(
       appBar: AppBar(
@@ -226,9 +216,7 @@ class _HomePageState extends State<HomePage> {
         elevation: 0.0,
         actions: [
           if (isLoggedIn == true)
-            IconButton(
-                icon: Icon(Icons.logout),
-                onPressed: logout)
+            IconButton(icon: Icon(Icons.logout), onPressed: logout)
         ],
       ),
       body: SafeArea(
@@ -236,7 +224,7 @@ class _HomePageState extends State<HomePage> {
           AutoMatchingPage(userInfo: widget.userInfo),
           OttRecommendationPage(),
           // ChatRoomPage(ottShareRoom: ottShareRoom, chatRoom: chatRoom), //임시 페이지
-          MyPage(userInfo: widget.userInfo, selectedIndex : 3),
+          MyPage(userInfo: widget.userInfo, selectedIndex: 3),
         ].elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -254,6 +242,4 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     super.dispose();
   }
-
 }
-
