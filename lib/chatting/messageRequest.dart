@@ -16,8 +16,8 @@ class MessageRequest {
   Map<String, dynamic> toJson() {
 
     return {
-      'ottShareRoom': chatRoom.toJson(),
-      'ottRoomMemberResponse': writer.toJson(),
+      'ottShareRoom': this.chatRoom.toJson(),
+      'ottRoomMemberResponse': this.writer.toJson(),
       'message': content,
     };
   }

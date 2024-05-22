@@ -28,7 +28,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   @override
   void initState() {
     super.initState();
-    print("init userId = ${writer.userInfo.userId}");
     connect();
     loadInitialMessages();
   }
@@ -89,6 +88,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       MessageRequest messageRequest = MessageRequest(chatRoom: chatRoom, writer: writer, content: textController.text);
       Map<String, dynamic> messageRequestJson = messageRequest.toJson();
 
+      print("messageRequestJson = ${messageRequestJson}");
       stompClient.send(
         destination: '/app'
             '/chat/${chatRoom.chatRoomId}',

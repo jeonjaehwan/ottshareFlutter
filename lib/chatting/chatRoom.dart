@@ -58,7 +58,7 @@ class ChatRoom {
       'id': chatRoomId,
       'ottRoomMemberResponses': readerResponses,
       'ottRoomMemberResponse': writer.toJson(),
-      'ottType': ottType,
+      'ott': ottType,
       'ottId': ottId,
       'ottPassword': ottPassword,
     };

@@ -20,7 +20,7 @@ class ChatMember {
     UserInfo userInfo = UserInfo.fromJson(json['user']);
 
     return ChatMember(
-      chatMemberId: json['user']['id'] as int? ?? 0,
+      chatMemberId: json['id'] as int? ?? 0,
       userInfo: userInfo,
       isLeader: json['leader'] as bool? ?? false,
       isChecked: json['checked'] as bool? ?? false,
@@ -33,7 +33,6 @@ class ChatMember {
       'user': userInfo.toJson(),
       'leader': isLeader,
       'checked': isChecked,
-
     };
   }
 

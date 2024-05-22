@@ -20,7 +20,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   late UserInfo? userInfo;
   int? selectedOttIndex; // 선택된 OTT의 인덱스를 추적하는 변수
   bool? isLeader; // 방장이 선택되었는지 여부를 나타내는 상태
-  late bool? isShareRoom;
+  bool? isShareRoom = false;
   bool isStartMatching = false;
 
 
@@ -30,7 +30,6 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     super.initState();
     userInfo = widget.userInfo;
     isShareRoom = widget.userInfo?.isShareRoom;
-
 
     if (userInfo != null) {
       print('user info = ${widget.userInfo}');
@@ -65,6 +64,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
   }
 
+  // 멤버인 경우, 바로 자동매칭 요청 보냄.
   Future<void> sendAutoMatchingRequest() async {
     if (selectedOttIndex == null || isLeader == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -94,6 +94,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       'isLeader': isLeader,
     };
 
+
     if (userInfo != null) {
       requestMap['userInfo'] = userInfo!.toJson();
     }
@@ -105,6 +106,30 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       headers: {"Content-Type": "application/json"},
       body: body,
     );
+
+    if (response.statusCode == 200) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('자동매칭 시작'),
+            content: Text('잠시만 기다려주세요!'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  context.pop();
+                },
+                child: Text('확인'),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('자동매칭 실패')));
+      return;
+    }
   }
 
   Future<void> navigateToChatRoom() async {
@@ -121,8 +146,8 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       var response = await http.get(url, headers: {"Content-Type": "application/json"});
       Map<String,dynamic> json = jsonDecode(response.body);
 
+      print("automatchingjson = ${json}");
       ChatRoom chatRoom = ChatRoom.fromJson(json, userInfo!);
-      print("userId = ${chatRoom.writer.userInfo.userId}");
 
       context.push("/chatRoom", extra: chatRoom);
 
@@ -208,7 +233,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
           .showSnackBar(SnackBar(content: Text('로그인 해주세요.')));
     } else if (selectedOttIndex != null && isLeader != null) {
       if (isLeader!) {
-        context.push("/ottInfo?selectedOttIndex=0&isLeader=false", extra: userInfo).then((result) {
+        context.push("/ottInfo?selectedOttIndex=$selectedOttIndex&isLeader=$isLeader", extra: userInfo).then((result) {
           if (result is Map<String, dynamic>) {
             setState(() {
               isStartMatching = bool.parse(result['isStartMatching']);
