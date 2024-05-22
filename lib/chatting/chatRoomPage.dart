@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:ott_share/chatting/message.dart';
 import 'package:ott_share/chatting/messageRequest.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
@@ -23,11 +23,12 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   final scrollController = ScrollController();
   late ChatRoom chatRoom = widget.chatRoom;
   late ChatMember writer = chatRoom.writer;
-  List<String> messages = [];
+  List<Message> messages = [];
 
   @override
   void initState() {
     super.initState();
+    print("init userId = ${writer.userInfo.userId}");
     connect();
     loadInitialMessages();
   }
@@ -50,10 +51,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       destination: '/topic/messages/${chatRoom.chatRoomId}',
       callback: (frame) {
         setState(() {
-          messages.add(jsonDecode(frame.body!)['message']);
-          if (messages.length > 10) {
-            messages.removeAt(0);
-          }
+          scrollToBottom();
         });
       },
     );
@@ -61,12 +59,17 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Future<void> loadInitialMessages() async {
     var initialMessages = await fetchMessages();
-    setState(() {
-      messages.addAll(initialMessages.map((e) => e['message']));
-      if (messages.length > 10) {
-        messages = messages.take(10).toList();
-      }
-    });
+
+    for (var imessage in initialMessages) {
+      Message message = Message.fromJson(imessage);
+
+      setState(() {
+        messages.add(message);
+      });
+    }
+    // setState(() {
+    //   messages.addAll(initialMessages.map((e) => e['message']));
+    // });
   }
 
   Future<List<dynamic>> fetchMessages() async {
@@ -74,6 +77,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
+
       return data['content'];
     } else {
       throw Exception('Failed to load messages');
@@ -82,28 +86,153 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Future<void> _sendMessage() async {
     if (textController.text.isNotEmpty) {
-      MessageRequest messageRequest = MessageRequest(chatRoom: chatRoom, writer: writer, message: textController.text);
+      MessageRequest messageRequest = MessageRequest(chatRoom: chatRoom, writer: writer, content: textController.text);
       Map<String, dynamic> messageRequestJson = messageRequest.toJson();
 
-
-      print("Original messageRequest.dart: $messageRequestJson");
-
       stompClient.send(
-        destination: '/app/chat/${chatRoom.chatRoomId}',
+        destination: '/app'
+            '/chat/${chatRoom.chatRoomId}',
         body: jsonEncode(messageRequestJson),
       );
 
-
       setState(() {
-        messages.add(textController.text);
-        if (messages.length > 10) {
-          messages.removeAt(0);
-        }
+        Message message = Message(content: textController.text, writer: writer, createdAt: "임시");
+        messages.add(message);
+        textController.clear();
+        scrollToBottom();
       });
-
-      textController.clear();
     }
   }
+
+  void scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (scrollController.hasClients) {
+        scrollController.animateTo(
+          scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+
+
+  Widget createChatBox(BuildContext context, Message message, ChatMember writer) {
+    final ChatMember messageWriter = message.writer;
+    print("messageWriter = ${messageWriter.userInfo.userId}");
+    print("loginUser = ${writer.userInfo.userId}");
+
+    if (messageWriter == writer) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: <Widget>[
+          Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              Container(
+                child: Text(
+                  writer.userInfo.nickname,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontSize: 17.0),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.65,
+                  maxHeight: 300,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    message.content,
+                    textAlign: TextAlign.left,
+                    style: TextStyle(fontSize: 20.0),
+                    softWrap: true,
+                    maxLines: null,
+                    overflow: TextOverflow.visible,
+                  ),
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15.0),
+                ),
+              ),
+            ],
+          ),
+          Container(
+            height: 45,
+            width: 10,
+          ),
+          Container(
+            height: 65,
+            child: const CircleAvatar(
+              radius: 23,
+              backgroundImage: AssetImage('assets/wavve_logo.png'),
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            height: 65,
+            child: const CircleAvatar(
+              radius: 23,
+              backgroundImage: AssetImage('assets/wavve_logo.png'),
+            ),
+          ),
+          Container(
+            height: 45,
+            width: 10,
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                child: Text(
+                  writer.userInfo.nickname,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontSize: 17.0),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.65,
+                  maxHeight: 300,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    message.content,
+                    textAlign: TextAlign.left,
+                    style: TextStyle(fontSize: 20.0),
+                    softWrap: true,
+                    maxLines: null,
+                    overflow: TextOverflow.visible,
+                  ),
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15.0),
+                ),
+              ),
+            ],
+          ),
+
+
+        ],
+      );
+    }
+
+
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -120,65 +249,16 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         children: <Widget>[
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
+              padding: const EdgeInsets.all(15),
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ListView.separated(
-                  reverse: true,
+                  // reverse: true,
                   shrinkWrap: true,
                   controller: scrollController,
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        Column(
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: <Widget>[
-                            Container(
-                              child: Text(
-                                writer.userInfo.nickname,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(fontSize: 17.0),
-                              ),
-                            ),
-                            Container(
-                              constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.65,
-                                maxHeight: 300,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Text(
-                                  messages[index],
-                                  textAlign: TextAlign.left,
-                                  style: TextStyle(fontSize: 20.0),
-                                  softWrap: true,
-                                  maxLines: null,
-                                  overflow: TextOverflow.visible,
-                                ),
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(15.0),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          height: 45,
-                          width: 10,
-                        ),
-                        Container(
-                          height: 65,
-                          child: const CircleAvatar(
-                            radius: 23,
-                            backgroundImage: AssetImage('assets/wavve_logo.png'),
-                          ),
-                        ),
-                      ],
-                    );
+                    return createChatBox(context, messages[index], writer);
                   },
                   separatorBuilder: (BuildContext context, int index) {
                     return Container(

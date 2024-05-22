@@ -5,12 +5,12 @@ class MessageRequest {
 
   final ChatRoom chatRoom;
   final ChatMember writer;
-  final String message;
+  final String content;
 
   MessageRequest({
     required this.chatRoom,
     required this.writer,
-    required this.message,
+    required this.content,
   });
 
   Map<String, dynamic> toJson() {
@@ -18,7 +18,7 @@ class MessageRequest {
     return {
       'ottShareRoom': chatRoom.toJson(),
       'ottRoomMemberResponse': writer.toJson(),
-      'message': message,
+      'message': content,
     };
   }
 }

@@ -3,12 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:ott_share/models/userInfo.dart';
-import 'package:ott_share/screen/OTTInfoPage.dart';
 
-import '../chatting/chatMember.dart';
 import '../chatting/chatRoom.dart';
-import '../chatting/chatRoomPage.dart';
-import '../chatting/message.dart';
 import '../models/loginStorage.dart';
 
 class AutoMatchingPage extends StatefulWidget {
@@ -125,13 +121,8 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       var response = await http.get(url, headers: {"Content-Type": "application/json"});
       Map<String,dynamic> json = jsonDecode(response.body);
 
-      print(json);
-
-
-      late UserInfo currentUserInfoJson;
-
-
       ChatRoom chatRoom = ChatRoom.fromJson(json, userInfo!);
+      print("userId = ${chatRoom.writer.userInfo.userId}");
 
       context.push("/chatRoom", extra: chatRoom);
 

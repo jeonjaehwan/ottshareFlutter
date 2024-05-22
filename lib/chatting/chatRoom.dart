@@ -54,7 +54,6 @@ class ChatRoom {
       readerResponses.add(reader.toJson());
 
     }
-
     return {
       'id': chatRoomId,
       'ottRoomMemberResponses': readerResponses,
