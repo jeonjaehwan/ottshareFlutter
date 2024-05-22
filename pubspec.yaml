@@ -47,7 +47,6 @@ dependencies:
 
   csp: ^0.1.1
 
-
 #  web_socket_channel: ^3.0.0
 
 dev_dependencies:

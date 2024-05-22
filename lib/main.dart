@@ -85,11 +85,8 @@ class MyApp extends StatelessWidget {
           GoRoute(
               path: "/chatRoom",
               builder: (context, state) {
-                var currentUserInfoJson =
-                    state.uri.queryParameters['currentUserInfoJson']!;
                 ChatRoom chatRoom = state.extra as ChatRoom;
                 return ChatRoomPage(
-                    currentUserInfoJson: currentUserInfoJson,
                     chatRoom: chatRoom);
               }),
         ]),
