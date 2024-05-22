@@ -1,61 +1,68 @@
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:ott_share/chatting/chatMember.dart';
-import 'package:ott_share/chatting/drawer.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:anydrawer/anydrawer.dart';
 import 'package:http/http.dart' as http;
-import '../models/loginStorage.dart';
+import 'package:ott_share/chatting/messageRequest.dart';
+import 'package:stomp_dart_client/stomp_dart_client.dart';
+
+import 'chatMember.dart';
 import 'chatRoom.dart';
 
 class ChatRoomPage extends StatefulWidget {
-  final dynamic currentUserInfoJson;
   final ChatRoom chatRoom;
 
-  ChatRoomPage({Key? key, required this.currentUserInfoJson, required this.chatRoom})
-      : super(key: key);
+  ChatRoomPage({Key? key, required this.chatRoom}) : super(key: key);
 
   @override
   _ChatRoomPageState createState() => _ChatRoomPageState();
 }
 
 class _ChatRoomPageState extends State<ChatRoomPage> {
-  final TextEditingController _controller = TextEditingController();
+  late StompClient stompClient;
+  final TextEditingController textController = TextEditingController();
   final scrollController = ScrollController();
-  final AnyDrawerController controller = AnyDrawerController();
-  late WebSocketChannel channel;
-  late ChatRoom chatRoom;
-  late ChatMember writer;
-  List<String> messages = ['하이', '헬로', '하하']; // List to store messages
-  // late List<Message> messages;
+  late ChatRoom chatRoom = widget.chatRoom;
+  late ChatMember writer = chatRoom.writer;
+  List<String> messages = [];
 
   @override
   void initState() {
     super.initState();
-    String websocketURL = 'ws://localhost:8080/websocket';
-    channel = WebSocketChannel.connect(Uri.parse(websocketURL));
-    channel.stream.listen((message) {
-      setState(() {
-        messages.add(jsonDecode(
-            message)['message']); // Assume message is properly formatted
-        if (messages.length > 10) {
-          messages.removeAt(
-              0); // Remove the oldest message to maintain only 10 messages
-        }
-      });
-    });
+    connect();
     loadInitialMessages();
-    chatRoom = widget.chatRoom;
-    writer = chatRoom.writer;
-    // messages = chatRoom.messages;
+  }
+
+  void connect() {
+    stompClient = StompClient(
+      config: StompConfig(
+        url: 'ws://localhost:8080/websocket',
+        onConnect: onConnect,
+        onStompError: (dynamic error) => print(error.toString()),
+        onWebSocketError: (dynamic error) => print(error.toString()),
+      ),
+    );
+
+    stompClient.activate();
+  }
+
+  void onConnect(StompFrame frame) {
+    stompClient.subscribe(
+      destination: '/topic/messages/${chatRoom.chatRoomId}',
+      callback: (frame) {
+        setState(() {
+          messages.add(jsonDecode(frame.body!)['message']);
+          if (messages.length > 10) {
+            messages.removeAt(0);
+          }
+        });
+      },
+    );
   }
 
   Future<void> loadInitialMessages() async {
     var initialMessages = await fetchMessages();
     setState(() {
       messages.addAll(initialMessages.map((e) => e['message']));
-      // Ensure only the latest 10 messages are kept if more than 10 messages are loaded
       if (messages.length > 10) {
         messages = messages.take(10).toList();
       }
@@ -63,100 +70,56 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   }
 
   Future<List<dynamic>> fetchMessages() async {
-    final response = await http.get(Uri.parse(
-        'http://localhost:8080/chat/${chatRoom.chatRoomId}/messages'));
+    final response = await http.get(Uri.parse('http://localhost:8080/chat/${chatRoom.chatRoomId}/messages'));
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
-      return data['content']; // Access the 'content' part of the page
+      return data['content'];
     } else {
       throw Exception('Failed to load messages');
     }
   }
 
-  void _sendMessage() async {
-    if (_controller.text.isNotEmpty) {
-      // int? currentUserId = await LoginStorage.getUserId();
-      // if (currentUserId == null) {
-      //   print("No user logged in.");
-      //   return;
-      // }
+  Future<void> _sendMessage() async {
+    if (textController.text.isNotEmpty) {
+      MessageRequest messageRequest = MessageRequest(chatRoom: chatRoom, writer: writer, message: textController.text);
+      Map<String, dynamic> messageRequestJson = messageRequest.toJson();
 
-      print('ottShareRoomJson: ${widget.currentUserInfoJson}');
 
-      var messageRequest = {
-        'ottRoomMemberResponse': widget.currentUserInfoJson,
-        'message': _controller.text
-      };
+      print("Original messageRequest.dart: $messageRequestJson");
 
-      var stompFrame = 'SEND\n'
-              'content-type:application/json;charset=UTF-8\n\n' +
-          jsonEncode(messageRequest) +
-          '\u0000';
+      stompClient.send(
+        destination: '/app/chat/${chatRoom.chatRoomId}',
+        body: jsonEncode(messageRequestJson),
+      );
 
-      channel.sink.add(stompFrame);
+
       setState(() {
-        messages.add(_controller.text); // Add message at the end
+        messages.add(textController.text);
         if (messages.length > 10) {
-          messages.removeAt(0); // Maintain only the latest 10 messages
+          messages.removeAt(0);
         }
       });
-      _controller.clear();
+
+      textController.clear();
     }
   }
-
-  Widget chatBox = Row(
-
-  );
-
-  void _showDrawer() {
-    showDrawer(
-      context,
-      builder: (context) => const CheckDrawer(),
-      config: const DrawerConfig(
-        side: DrawerSide.right,
-        closeOnClickOutside: true,
-        closeOnEscapeKey: true,
-        closeOnResume: true, // (Android only)
-        closeOnBackButton: true, // (Requires a route navigator)
-        backdropOpacity: 0.5,
-        borderRadius: 24,
-      ),
-      onClose: () {
-        debugPrint('Drawer closed');
-      },
-      onOpen: () {
-        debugPrint('Drawer opened');
-      },
-      controller: controller,
-    );
-  }
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xffffdf24),
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        title: Text('채팅방'),
         backgroundColor: Color(0xffffdf24),
-        resizeToAvoidBottomInset: true,
-        appBar: AppBar(
-          title: Text('채팅방'),
-          backgroundColor: Color(0xffffdf24),
-          centerTitle: true,
-          elevation: 0.0,
-          actions: [
-            IconButton(
-              icon: Icon(Icons.menu),
-              onPressed: () {
-                _showDrawer;
-              },
-            ),
-          ],
-        ),
-        body: Column(
-          children: <Widget>[
-            Expanded(
-                child: Padding(
+        centerTitle: true,
+        elevation: 0.0,
+      ),
+      body: Column(
+        children: <Widget>[
+          Expanded(
+            child: Padding(
               padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
               child: Align(
                 alignment: Alignment.topCenter,
@@ -175,7 +138,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                           children: <Widget>[
                             Container(
                               child: Text(
-                                writer.nickname,
+                                writer.userInfo.nickname,
                                 textAlign: TextAlign.right,
                                 style: TextStyle(fontSize: 17.0),
                               ),
@@ -189,7 +152,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                                 padding: const EdgeInsets.all(10.0),
                                 child: Text(
                                   messages[index],
-                                  textAlign: TextAlign.left, style: TextStyle(fontSize: 20.0),
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(fontSize: 20.0),
                                   softWrap: true,
                                   maxLines: null,
                                   overflow: TextOverflow.visible,
@@ -210,8 +174,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                           height: 65,
                           child: const CircleAvatar(
                             radius: 23,
-                            backgroundImage:
-                                AssetImage('assets/wavve_logo.png'),
+                            backgroundImage: AssetImage('assets/wavve_logo.png'),
                           ),
                         ),
                       ],
@@ -220,33 +183,38 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                   separatorBuilder: (BuildContext context, int index) {
                     return Container(
                       height: 20,
-                      // color: Colors.yellow,
                     );
                   },
                 ),
               ),
-            )),
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                suffixIcon: IconButton(
-                    icon: Icon(Icons.send), onPressed: () => _sendMessage()),
-              ),
-              onSubmitted: (_) => _sendMessage(),
-              maxLines: null,
             ),
-
-          ],
-
-        ));
+          ),
+          TextField(
+            controller: textController,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              suffixIcon: IconButton(
+                icon: Icon(Icons.send),
+                onPressed: () => _sendMessage(),
+              ),
+            ),
+            onSubmitted: (_) => _sendMessage(),
+            maxLines: null,
+          ),
+        ],
+      ),
+      endDrawer: Drawer(
+        child: ListView(),
+      ),
+    );
   }
 
   @override
   void dispose() {
-    controller.dispose();
-    channel.sink.close();
+    textController.dispose();
+    scrollController.dispose();
+    stompClient.deactivate();
     super.dispose();
   }
 }

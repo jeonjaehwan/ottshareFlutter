@@ -123,18 +123,17 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       var url =
       Uri.parse('http://localhost:8080/api/ottShareRoom/${userInfo!.userId}');
       var response = await http.get(url, headers: {"Content-Type": "application/json"});
-      var json = jsonDecode(response.body);
-      late dynamic currentUserInfoJson;
+      Map<String,dynamic> json = jsonDecode(response.body);
+
+      print(json);
+
+
+      late UserInfo currentUserInfoJson;
+
 
       ChatRoom chatRoom = ChatRoom.fromJson(json, userInfo!);
 
-      for (var user in json['ottRoomMemberResponses']) {
-        if (user['user']['id'] == userInfo!.userId) {
-          currentUserInfoJson = user;
-        }
-      }
-
-      context.push("/chatRoom?currentUserInfoJson=$currentUserInfoJson", extra: chatRoom);
+      context.push("/chatRoom", extra: chatRoom);
 
     } catch (e) {
       print(e);

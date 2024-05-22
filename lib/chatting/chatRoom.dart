@@ -1,3 +1,5 @@
+import 'package:http/http.dart';
+
 import '../models/userInfo.dart';
 import 'chatMember.dart';
 import 'message.dart';
@@ -7,9 +9,7 @@ class ChatRoom {
   final int chatRoomId;
 
   late ChatMember writer;
-  final List<ChatMember> readers;
-
-  // List<Message> messages;
+  late List<ChatMember> readers;
 
   final String ottType;
   String ottId;
@@ -20,7 +20,6 @@ class ChatRoom {
     required this.chatRoomId,
     required this.writer,
     required this.readers,
-    // required this.messages,
     required this.ottType,
     required this.ottId,
     required this.ottPassword
@@ -46,6 +45,24 @@ class ChatRoom {
       ottId: json['ottId'] as String? ?? '',
       ottPassword: json['ottPassword'] as String? ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+
+    List<dynamic> readerResponses = [];
+    for (var reader in readers) {
+      readerResponses.add(reader.toJson());
+
+    }
+
+    return {
+      'id': chatRoomId,
+      'ottRoomMemberResponses': readerResponses,
+      'ottRoomMemberResponse': writer.toJson(),
+      'ottType': ottType,
+      'ottId': ottId,
+      'ottPassword': ottPassword,
+    };
   }
 
 }
