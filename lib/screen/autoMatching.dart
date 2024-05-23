@@ -148,6 +148,8 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
       print("automatchingjson = ${json}");
       ChatRoom chatRoom = ChatRoom.fromJson(json, userInfo!);
+      print("chatRoom의 USERINFO${userInfo?.userId}");
+      print("chatRoom의 USERINFO${chatRoom.writer.userInfo.userId}");
 
       context.push("/chatRoom", extra: chatRoom);
 

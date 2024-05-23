@@ -29,11 +29,12 @@ class ChatRoom {
     late ChatMember writer;
     List<ChatMember> readers = [];
 
-    for (var user in json['ottRoomMemberResponses']) {
-      if (user['user']['id'] == userInfo.userId) {
-        writer = ChatMember.fromJson(user);
+    for (var ottRoomMemberResponse in json['ottRoomMemberResponses']) {
+      if (ottRoomMemberResponse['user']['userId'] == userInfo.userId) {
+        writer = ChatMember.fromJson(ottRoomMemberResponse);
+        print("writer의 userInfoId = ${writer.userInfo.userId}");
       } else {
-        readers.add(ChatMember.fromJson(user));
+        readers.add(ChatMember.fromJson(ottRoomMemberResponse));
       }
     }
 

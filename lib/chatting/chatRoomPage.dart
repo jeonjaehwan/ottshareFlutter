@@ -28,6 +28,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   @override
   void initState() {
     super.initState();
+    print("init loginUser = ${writer.userInfo.userId}");
     connect();
     loadInitialMessages();
   }
@@ -66,9 +67,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         messages.add(message);
       });
     }
-    // setState(() {
-    //   messages.addAll(initialMessages.map((e) => e['message']));
-    // });
   }
 
   Future<List<dynamic>> fetchMessages() async {

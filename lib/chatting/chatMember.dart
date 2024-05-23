@@ -19,6 +19,8 @@ class ChatMember {
 
     UserInfo userInfo = UserInfo.fromJson(json['user']);
 
+    print("ChatMember.fromJson의 userInfo = ${userInfo.userId}");
+
     return ChatMember(
       chatMemberId: json['id'] as int? ?? 0,
       userInfo: userInfo,
