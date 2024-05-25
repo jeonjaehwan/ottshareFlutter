@@ -24,45 +24,53 @@ class _MyPageState extends State<MyPage> {
 
   @override
   Widget build(BuildContext context) {
-    print('my page user info = ${widget.userInfo}');
+    print('my page user info = ${userInfo}');
 
     late String text;
     late Widget childWidget;
 
     return Scaffold(
-      body: ListView.builder(
-        itemCount: 4,
-        itemBuilder: (context, index) {
-          switch (index) {
-            case 0:
-              text = '회원 수정';
-              break;
-            case 1:
-              text = '회원 탈퇴';
-              break;
-            case 2:
-              text = '자주 묻는 질문';
-              break;
-            case 3:
-              text = '1:1 문의';
-              break;
-            default:
-              text = '';
-          }
-
-          childWidget = Container(
+      body: Column(
+        children: <Widget>[
+          Container(
             height: 60,
-            decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey))),
-            child: ListTile(
-              title: Text(text, style: TextStyle(fontSize: 18)),
-              onTap: () {},
-            ),
-          );
+            child: Text("${userInfo!.nickname}"),
+          ),
+          const SizedBox(height: 20),
+          ListView.builder(
+            itemCount: 4,
+            itemBuilder: (context, index) {
+              switch (index) {
+                case 0:
+                  text = '회원 수정';
+                  break;
+                case 1:
+                  text = '회원 탈퇴';
+                  break;
+                case 2:
+                  text = '자주 묻는 질문';
+                  break;
+                case 3:
+                  text = '1:1 문의';
+                  break;
+                default:
+                  text = '';
+              }
+              childWidget = Container(
+                height: 60,
+                decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Colors.grey))),
+                child: ListTile(
+                  title: Text(text, style: TextStyle(fontSize: 18)),
+                  onTap: () {},
+                ),
+              );
 
-          return childWidget;
-        },
-      ),
+              return childWidget;
+            },
+          ),
+        ],
+      )
     );
   }
 

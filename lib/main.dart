@@ -220,6 +220,7 @@ class _HomePageState extends State<HomePage> {
         child: <Widget>[
           AutoMatchingPage(userInfo: widget.userInfo),
           OttRecommendationPage(),
+          AutoMatchingPage(userInfo: widget.userInfo),
           // ChatRoomPage(ottShareRoom: ottShareRoom, chatRoom: chatRoom), //임시 페이지
           MyPage(userInfo: widget.userInfo, selectedIndex: 3),
         ].elementAt(_selectedIndex),
