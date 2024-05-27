@@ -65,7 +65,7 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
     );
 
     if (response.statusCode == 200) {
-      context.pop(true);
+      context.pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('자동 매칭 실패')));
