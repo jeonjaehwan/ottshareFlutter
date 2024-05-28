@@ -50,9 +50,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     stompClient.subscribe(
       destination: '/topic/messages/${chatRoom.chatRoomId}',
       callback: (frame) {
-        setState(() {
-          scrollToBottom();
-        });
       },
     );
   }
@@ -65,6 +62,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
       setState(() {
         messages.add(message);
+        scrollToBottom();
       });
     }
   }
@@ -104,6 +102,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   void scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      print("scrollController.hasClients = ${scrollController.hasClients}");
       if (scrollController.hasClients) {
         scrollController.animateTo(
           scrollController.position.maxScrollExtent,
@@ -118,10 +117,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Widget createChatBox(BuildContext context, Message message, ChatMember writer) {
     final ChatMember messageWriter = message.writer;
-    print("messageWriter = ${messageWriter.userInfo.userId}");
-    print("loginUser = ${writer.userInfo.userId}");
 
-    if (messageWriter == writer) {
+    if (messageWriter.userInfo.userId == writer.userInfo.userId) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
@@ -129,13 +126,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
-              Container(
-                child: Text(
-                  writer.userInfo.nickname,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 17.0),
-                ),
-              ),
               Container(
                 constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.65,
@@ -193,9 +183,9 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             children: <Widget>[
               Container(
                 child: Text(
-                  writer.userInfo.nickname,
+                  messageWriter.userInfo.nickname,
                   textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 17.0),
+                  style: TextStyle(fontSize: 17.0, fontWeight: FontWeight.bold),
                 ),
               ),
               Container(
