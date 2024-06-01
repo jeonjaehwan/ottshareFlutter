@@ -49,11 +49,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   void onConnect(StompFrame frame) {
     stompClient.subscribe(
       destination: '/topic/messages/${chatRoom.chatRoomId}',
-      callback: (frame) {
-        setState(() {
-          scrollToBottom();
-        });
-      },
+      callback: (frame) {},
     );
   }
 
@@ -65,12 +61,14 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
       setState(() {
         messages.add(message);
+        scrollToBottom();
       });
     }
   }
 
   Future<List<dynamic>> fetchMessages() async {
-    final response = await http.get(Uri.parse('http://localhost:8080/chat/${chatRoom.chatRoomId}/messages'));
+    final response = await http.get(Uri.parse(
+        'http://localhost:8080/chat/${chatRoom.chatRoomId}/messages'));
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
@@ -83,7 +81,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Future<void> _sendMessage() async {
     if (textController.text.isNotEmpty) {
-      MessageRequest messageRequest = MessageRequest(chatRoom: chatRoom, writer: writer, content: textController.text);
+      MessageRequest messageRequest = MessageRequest(
+          chatRoom: chatRoom, writer: writer, content: textController.text);
       Map<String, dynamic> messageRequestJson = messageRequest.toJson();
 
       print("messageRequestJson = ${messageRequestJson}");
@@ -94,7 +93,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       );
 
       setState(() {
-        Message message = Message(content: textController.text, writer: writer, createdAt: "임시");
+        Message message = Message(
+            content: textController.text, writer: writer, createdAt: "임시");
         messages.add(message);
         textController.clear();
         scrollToBottom();
@@ -104,6 +104,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   void scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      print("scrollController.hasClients = ${scrollController.hasClients}");
       if (scrollController.hasClients) {
         scrollController.animateTo(
           scrollController.position.maxScrollExtent,
@@ -114,14 +115,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     });
   }
 
-
-
-  Widget createChatBox(BuildContext context, Message message, ChatMember writer) {
+  Widget createChatBox(
+      BuildContext context, Message message, ChatMember writer) {
     final ChatMember messageWriter = message.writer;
-    print("messageWriter = ${messageWriter.userInfo.userId}");
-    print("loginUser = ${writer.userInfo.userId}");
 
-    if (messageWriter == writer) {
+    if (messageWriter.userInfo.userId == writer.userInfo.userId) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
@@ -129,13 +127,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
-              Container(
-                child: Text(
-                  writer.userInfo.nickname,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 17.0),
-                ),
-              ),
               Container(
                 constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.65,
@@ -193,9 +184,9 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             children: <Widget>[
               Container(
                 child: Text(
-                  writer.userInfo.nickname,
+                  messageWriter.userInfo.nickname,
                   textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 17.0),
+                  style: TextStyle(fontSize: 17.0, fontWeight: FontWeight.bold),
                 ),
               ),
               Container(
@@ -221,71 +212,143 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               ),
             ],
           ),
-
-
         ],
       );
     }
-
-
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xffffdf24),
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: Text('채팅방'),
         backgroundColor: Color(0xffffdf24),
-        centerTitle: true,
-        elevation: 0.0,
-      ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(15),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ListView.separated(
-                  // reverse: true,
-                  shrinkWrap: true,
-                  controller: scrollController,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    return createChatBox(context, messages[index], writer);
-                  },
-                  separatorBuilder: (BuildContext context, int index) {
-                    return Container(
-                      height: 20,
-                    );
-                  },
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          title: Text('채팅방'),
+          backgroundColor: Color(0xffffdf24),
+          centerTitle: true,
+          elevation: 0.0,
+        ),
+        body: Column(
+          children: <Widget>[
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(15),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ListView.separated(
+                    // reverse: true,
+                    shrinkWrap: true,
+                    controller: scrollController,
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      return createChatBox(context, messages[index], writer);
+                    },
+                    separatorBuilder: (BuildContext context, int index) {
+                      return Container(
+                        height: 20,
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
-          ),
-          TextField(
-            controller: textController,
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              suffixIcon: IconButton(
-                icon: Icon(Icons.send),
-                onPressed: () => _sendMessage(),
+            TextField(
+              controller: textController,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.send),
+                  onPressed: () => _sendMessage(),
+                ),
               ),
+              onSubmitted: (_) => _sendMessage(),
+              maxLines: null,
             ),
-            onSubmitted: (_) => _sendMessage(),
-            maxLines: null,
+          ],
+        ),
+        endDrawer: Drawer(
+          width: MediaQuery.of(context).size.width * 0.7,
+          backgroundColor: Colors.white,
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.7,
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              children: <Widget>[
+                ListTile(
+                  leading: CircleAvatar(
+                    radius: 20,
+                    backgroundImage: AssetImage('assets/wavve_logo.png'),
+                  ),
+                  title: Text('${writer.userInfo.nickname}'), // 사용자 이름
+                ),
+                Divider(),
+                Expanded(
+                  child: ListView.separated(
+                      itemCount: chatRoom.readers.length,
+                      itemBuilder: (context, index) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.max,
+                          children: <Widget>[
+                            Container(
+                              height: 45,
+                              width: 70,
+                              child: CircleAvatar(
+                                radius: 20,
+                                backgroundImage: AssetImage('assets/wavve_logo.png'),
+                              ),
+                            ),
+                            SizedBox(width: 10), // 간격 추가
+                            Expanded(
+                              child: Text(
+                                '${chatRoom.readers[index].userInfo.nickname}',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                            Container(
+                              height: 45,
+                              width: 40,
+                              child: CheckboxListTile(
+                                value: chatRoom.readers[index].isChecked,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    chatRoom.readers[index].isChecked = value!;
+                                  });
+                                },
+                              ),
+                            )
+                          ],
+                        );
+                      },
+                      separatorBuilder: (BuildContext context, int index) {
+                        return Container(
+                          height: 10,
+                        );
+                      }),
+                ),
+                // 방 나가기 버튼
+                Container(
+                  padding: EdgeInsets.all(10.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // 방 삭제 요청
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xffffdf24),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 32.0, vertical: 16.0),
+                      textStyle: TextStyle(
+                          fontSize: 18.0, fontWeight: FontWeight.bold),
+                    ),
+                    child: Text('방 나가기'),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-      endDrawer: Drawer(
-        child: ListView(),
-      ),
-    );
+        ));
   }
 
   @override
