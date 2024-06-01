@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +24,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   final scrollController = ScrollController();
   late ChatRoom chatRoom = widget.chatRoom;
   late ChatMember writer = chatRoom.writer;
+  late ChatMember? leader = widget.chatRoom.findLeader();
+  late List<ChatMember> notLeaderList = [];
   List<Message> messages = [];
+
+  late List<bool> isCheckboxDisabled;
 
   @override
   void initState() {
@@ -31,6 +36,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     print("init loginUser = ${writer.userInfo.userId}");
     connect();
     loadInitialMessages();
+    isCheckboxDisabled = widget.chatRoom.readers.map((reader) => reader.isChecked).toList();
+    if (writer.chatMemberId != leader?.chatMemberId) {
+      notLeaderList.add(writer);
+    }
+    notLeaderList.addAll(widget.chatRoom.readers.where((reader) => reader.chatMemberId != leader?.chatMemberId).toList());
   }
 
   void connect() {
@@ -113,6 +123,23 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         );
       }
     });
+  }
+  
+  Future<void> sendCheckRequest(int userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${userId}/check'),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        print("sharingId = ${userId} 회원 체크 성공");
+      }
+    } catch (e) {
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('체크 요청 실패')));
+    }
   }
 
   Widget createChatBox(
@@ -217,22 +244,117 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     }
   }
 
+  Widget createCheckBox(BuildContext context, ChatMember writer, int index) {
+
+    if (writer.isLeader == true) {
+        return Row(
+          children: <Widget>[
+            if (isCheckboxDisabled[index])
+              Container(
+                height: 45,
+                width: 40,
+                child: CheckboxListTile(
+                  value: true,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      notLeaderList[index].isChecked = true;
+                    });
+                  },
+                ),
+              )
+            else
+              Container(
+                height: 45,
+                width: 40,
+                child: CheckboxListTile(
+                  value: notLeaderList[index].isChecked,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      notLeaderList[index].isChecked = value ?? false;
+                    });
+                  },
+                ),
+              ),
+            Container(
+              padding: EdgeInsets.all(5.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  print("체크 상태 : ${notLeaderList[index].isChecked}");
+                  if (isCheckboxDisabled[index] == true) {
+                    print("체크 해제 못 함");
+                  } else {
+                    if (notLeaderList[index].isChecked == true) {
+                      isCheckboxDisabled[index] = true;
+                      // 체크해달라고 요청
+                      sendCheckRequest(notLeaderList[index].chatMemberId);
+                      // 아이디, 비밀번호 보여줘야함.
+                    } else {
+                      print("저장할 데이터 없음");
+                    }
+                  }
+                  
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xffffdf24),
+                  foregroundColor: Colors.white,
+                  textStyle: TextStyle(
+                      fontSize: 15),
+                  padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                ),
+
+                child: Text('저장'),
+              ),
+            )
+          ]
+        );
+      } else {
+        return Container(
+          height: 45,
+          width: 40,
+          child: CheckboxListTile(
+            value: notLeaderList[index].isChecked,
+            onChanged: null,
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: Color(0xffffdf24),
         resizeToAvoidBottomInset: true,
         appBar: AppBar(
-          title: Text('채팅방'),
+          title: Text('${chatRoom.ottType} 채팅방'),
           backgroundColor: Color(0xffffdf24),
           centerTitle: true,
           elevation: 0.0,
         ),
         body: Column(
           children: <Widget>[
+            if (writer.chatMemberId == leader!.chatMemberId || writer.isChecked)
+              Container(
+                width: double.infinity,
+                height: 73,
+                color: Colors.yellow[200],
+                padding: EdgeInsets.all(7.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.announcement_outlined, color: Colors.black),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        "${chatRoom.ottType} 아이디 : ${chatRoom.ottId}"
+                            "\n${chatRoom.ottType} 비밀번호 : ${chatRoom.ottPassword}",
+                        style: TextStyle(color: Colors.black, fontSize: 18),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(15),
+                padding: const EdgeInsets.fromLTRB(15, 0, 15, 15),
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ListView.separated(
@@ -280,12 +402,17 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                     radius: 20,
                     backgroundImage: AssetImage('assets/wavve_logo.png'),
                   ),
-                  title: Text('${writer.userInfo.nickname}'), // 사용자 이름
+                  title: Text('방장 : ${leader!.userInfo.nickname}'), // 방장 닉네임
                 ),
                 Divider(),
+                SizedBox(height: 15),
+                Container(
+                  height: 45,
+                  child: Text("요금 납부 확인", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
+                ),
                 Expanded(
                   child: ListView.separated(
-                      itemCount: chatRoom.readers.length,
+                      itemCount: notLeaderList.length,
                       itemBuilder: (context, index) {
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -302,22 +429,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                             SizedBox(width: 10), // 간격 추가
                             Expanded(
                               child: Text(
-                                '${chatRoom.readers[index].userInfo.nickname}',
+                                '${notLeaderList[index].userInfo.nickname}',
                                 style: TextStyle(fontSize: 16),
                               ),
                             ),
-                            Container(
-                              height: 45,
-                              width: 40,
-                              child: CheckboxListTile(
-                                value: chatRoom.readers[index].isChecked,
-                                onChanged: (bool? value) {
-                                  setState(() {
-                                    chatRoom.readers[index].isChecked = value!;
-                                  });
-                                },
-                              ),
-                            )
+                            createCheckBox(context, writer, index),
                           ],
                         );
                       },
@@ -333,6 +449,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                   child: ElevatedButton(
                     onPressed: () {
                       // 방 삭제 요청
+
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xffffdf24),

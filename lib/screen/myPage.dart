@@ -38,6 +38,7 @@ class _MyPageState extends State<MyPage> {
           ),
           const SizedBox(height: 20),
           ListView.builder(
+            shrinkWrap: true,
             itemCount: 4,
             itemBuilder: (context, index) {
               switch (index) {

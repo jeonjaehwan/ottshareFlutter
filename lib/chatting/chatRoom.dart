@@ -25,6 +25,19 @@ class ChatRoom {
     required this.ottPassword
   });
 
+  ChatMember? findLeader() {
+    if (writer.isLeader == true) {
+      return writer;
+    } else {
+
+      for (var reader in readers) {
+        if (reader.isLeader == true) {
+          return reader;
+        }
+      }
+    }
+  }
+
   factory ChatRoom.fromJson(Map<String, dynamic> json, UserInfo userInfo) {
     late ChatMember writer;
     List<ChatMember> readers = [];
