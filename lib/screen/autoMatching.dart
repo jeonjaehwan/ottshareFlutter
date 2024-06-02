@@ -104,7 +104,6 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     final response = await http.post(
       Uri.parse('http://localhost:8080/api/waitingUser/save'),
       headers: {"Content-Type": "application/json"},
-      body: body,
     );
 
     if (response.statusCode == 200) {
@@ -158,9 +157,6 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to retrieve room information')));
     }
-
-
-
   }
 
   Widget ottBox(String assetName, String label, int index) {
@@ -277,9 +273,6 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   Widget build(BuildContext context) {
     String subscriptionText = _calculateSubscription();
     bool hasSelectedService = selectedOttIndex != null;
-
-    
-
     return Scaffold(
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),

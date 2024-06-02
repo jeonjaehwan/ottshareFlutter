@@ -11,6 +11,7 @@ import 'package:ott_share/screen/OTTInfoPage.dart';
 import 'package:ott_share/screen/SignUp.dart';
 import 'package:ott_share/screen/autoMatching.dart';
 import 'package:ott_share/chatting/chatRoomPage.dart';
+import 'package:ott_share/screen/chatRoomListPage.dart';
 import 'package:ott_share/screen/ottRecommendation.dart';
 import 'package:ott_share/models/loginStorage.dart';
 import 'package:ott_share/screen/myPage.dart';
@@ -195,6 +196,8 @@ class _HomePageState extends State<HomePage> {
         titleText = 'OTT 추천';
       case 2:
         titleText = '채팅방 기록';
+      case 3:
+        titleText = '마이페이지';
     }
 
     List<BottomNavigationBarItem> bottomItems = [
@@ -221,8 +224,7 @@ class _HomePageState extends State<HomePage> {
         child: <Widget>[
           AutoMatchingPage(userInfo: widget.userInfo),
           OttRecommendationPage(),
-          AutoMatchingPage(userInfo: widget.userInfo),
-          // ChatRoomPage(ottShareRoom: ottShareRoom, chatRoom: chatRoom), //임시 페이지
+          ChatRoomListPage(userInfo: widget.userInfo),
           MyPage(userInfo: widget.userInfo, selectedIndex: 3),
         ].elementAt(_selectedIndex),
       ),
