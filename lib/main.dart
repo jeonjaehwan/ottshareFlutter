@@ -24,6 +24,7 @@ import 'chatting/chatRoom.dart';
 import 'chatting/message.dart';
 import 'models/userInfo.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   KakaoSdk.init(

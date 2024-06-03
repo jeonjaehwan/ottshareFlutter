@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
+import '../models/localhost.dart';
 import '../models/userInfo.dart'; // UserInfo 모델 임포트
 
 class OTTInfoPage extends StatefulWidget {
@@ -59,7 +60,7 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
 
     // 서버로 POST 요청 보내기
     final response = await http.post(
-      Uri.parse('http://localhost:8080/api/waitingUser/save'),
+      Uri.parse('http://${Localhost.getIp()}:8080/api/waitingUser/save'),
       headers: {"Content-Type": "application/json"},
       body: requestBodyJson,
     );

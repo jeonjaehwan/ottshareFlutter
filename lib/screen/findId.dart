@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../models/localhost.dart';
+
 class FindIdPage extends StatefulWidget {
   @override
   _FindIdPageState createState() => _FindIdPageState();
@@ -17,7 +19,7 @@ class _FindIdPageState extends State<FindIdPage> {
    * 인증번호 전송
    */
   Future<void> _sendVerificationCode(BuildContext context) async {
-    final String apiUrl = 'http://localhost:8080/api/users/send';
+    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/send';
 
     String name = _nameController.text;
     String phoneNumber = _phoneNumberController.text;
@@ -98,7 +100,7 @@ class _FindIdPageState extends State<FindIdPage> {
    * 인증번호 확인
    */
   Future<void> _checkConfirmationCode(BuildContext context) async {
-    final String apiUrl = 'http://localhost:8080/api/users/find-username';
+    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/find-username';
 
     String name = _nameController.text;
     String phoneNumber = _phoneNumberController.text;

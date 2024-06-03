@@ -6,6 +6,7 @@ import 'package:ott_share/chatting/message.dart';
 import 'package:ott_share/chatting/messageRequest.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
+import '../models/localhost.dart';
 import 'chatMember.dart';
 import 'chatRoom.dart';
 
@@ -46,7 +47,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   void connect() {
     stompClient = StompClient(
       config: StompConfig(
-        url: 'ws://localhost:8080/websocket',
+        url: 'ws://${Localhost.getIp()}:8080/websocket',
         onConnect: onConnect,
         onStompError: (dynamic error) => print(error.toString()),
         onWebSocketError: (dynamic error) => print(error.toString()),
@@ -78,7 +79,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Future<List<dynamic>> fetchMessages() async {
     final response = await http.get(Uri.parse(
-        'http://localhost:8080/chat/${chatRoom.chatRoomId}/messages'));
+        'http://${Localhost.getIp()}:8080/chat/${chatRoom.chatRoomId}/messages'));
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
@@ -128,7 +129,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   Future<void> sendCheckRequest(int userId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${userId}/check'),
+        Uri.parse('http://${Localhost.getIp()}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${userId}/check'),
         headers: {"Content-Type": "application/json"},
       );
 

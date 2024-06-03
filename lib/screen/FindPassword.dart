@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../models/localhost.dart';
+
 class FindPasswordPage extends StatefulWidget {
   @override
   _FindPasswordPageState createState() => _FindPasswordPageState();
@@ -17,7 +19,7 @@ class _FindPasswordPageState extends State<FindPasswordPage> {
    * 비밀번호 재설정 링크 전송
    */
   Future<void> _sendResetLink(BuildContext context) async {
-    final String apiUrl = 'http://localhost:8080/api/users/find-password';
+    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/find-password';
 
     String name = _nameController.text;
     String username = _usernameController.text;

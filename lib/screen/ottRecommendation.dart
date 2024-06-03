@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:ott_share/models/OttQuestionInfo.dart';
+import 'package:ott_share/models/localhost.dart';
 
 import '../models/userInfo.dart';
 
@@ -17,10 +18,15 @@ class OttRecommendationPage extends StatefulWidget {
 }
 
 class _OttRecommendationPageState extends State<OttRecommendationPage> {
+
+
+
   @override
   void initState() {
     super.initState();
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +73,7 @@ class StartPage extends StatefulWidget {
 }
 
 class _StartPageState extends State<StartPage> {
+  String? ipAddress;
 
   int pageCount = 1;
   String buttonText = '시작';
@@ -81,6 +88,15 @@ class _StartPageState extends State<StartPage> {
   void initState() {
     super.initState();
     userInfo = widget.userInfo; // null일 수 있음
+    fetchIpAddress();
+  }
+
+  Future<void> fetchIpAddress() async {
+    String? ip = await Localhost.getIp();
+    setState(() {
+      ipAddress = ip;
+    });
+    print("현재 IP 주소 = $ip");
   }
 
 
@@ -217,7 +233,7 @@ class _StartPageState extends State<StartPage> {
     try {
 
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8080/api/ottRecQuestions/${pageCount}'),
+        Uri.parse('http://${ipAddress}:8080/api/ottRecQuestions/${pageCount}'),
         headers: {
           'Accept-Encoding': 'utf-8',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -250,7 +266,7 @@ class _StartPageState extends State<StartPage> {
     print(requestMap);
 
     await http.post(
-      Uri.parse('http://localhost:8080/api/ottRecQuestions/${pageCount}'),
+      Uri.parse('http://${ipAddress}:8080/api/ottRecQuestions/${pageCount}'),
       headers: {
         "Content-Encoding": "utf-8",
         "Content-Type": "application/json"
@@ -263,7 +279,7 @@ class _StartPageState extends State<StartPage> {
 
   Future<String?> sendGetResultRequest() async {
     final response = await http.post(
-      Uri.parse('http://localhost:8080/api/ottRecQuestions/16'),
+      Uri.parse('http://${ipAddress}:8080/api/ottRecQuestions/16'),
       headers: {"Content-Encoding": "utf-8"},
     );
 

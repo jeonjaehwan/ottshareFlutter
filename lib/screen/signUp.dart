@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../models/localhost.dart';
+
 enum BankType {
   KAKAObank,
   NH,
@@ -34,7 +36,7 @@ class _SignupPageState extends State<SignUpPage> {
   BankType? _selectedBank;
 
   Future<void> _registerUser(BuildContext context) async {
-    final String apiUrl = 'http://localhost:8080/api/users/join';
+    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/join';
 
     String name = _nameController.text;
     String username = _usernameController.text;

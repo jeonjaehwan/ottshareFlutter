@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import '../models/localhost.dart';
 import '../models/loginStorage.dart';
 
 import '../api/google_signin_api.dart';
@@ -22,7 +23,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login(BuildContext context) async {
 
-    final String apiUrl = 'http://localhost:8080/api/users/loginProc';
+    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/loginProc';
 
     String username = _usernameController.text;
     String password = _passwordController.text;

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:ott_share/models/userInfo.dart';
 
 import '../chatting/chatRoom.dart';
+import '../models/localhost.dart';
 import '../models/loginStorage.dart';
 
 class AutoMatchingPage extends StatefulWidget {
@@ -50,7 +51,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
     // waitingUser에 해당 user가 있는지 확인
     final response = await http.get(
-      Uri.parse('http://localhost:8080/api/waitingUser/${id}'),
+      Uri.parse('http://${Localhost.getIp()}:8080/api/waitingUser/${id}'),
       headers: {"Content-Type": "application/json"},
     );
     isStartMatching = response.body.toLowerCase() == 'true';
@@ -102,7 +103,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     var body = jsonEncode(requestMap);
 
     final response = await http.post(
-      Uri.parse('http://localhost:8080/api/waitingUser/save'),
+      Uri.parse('http://${Localhost.getIp()}:8080/api/waitingUser/save'),
       headers: {"Content-Type": "application/json"},
     );
 
@@ -141,7 +142,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
     try {
       var url =
-      Uri.parse('http://localhost:8080/api/ottShareRoom/${userInfo!.userId}');
+      Uri.parse('http://${Localhost.getIp()}:8080/api/ottShareRoom/${userInfo!.userId}');
       var response = await http.get(url, headers: {"Content-Type": "application/json"});
       Map<String,dynamic> json = jsonDecode(response.body);
 
