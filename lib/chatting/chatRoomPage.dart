@@ -20,6 +20,8 @@ class ChatRoomPage extends StatefulWidget {
 }
 
 class _ChatRoomPageState extends State<ChatRoomPage> {
+  String? ipAddress;
+
   late StompClient stompClient;
   final TextEditingController textController = TextEditingController();
   final scrollController = ScrollController();
@@ -34,6 +36,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   @override
   void initState() {
     super.initState();
+    fetchIpAddress();
     print("init loginUser = ${writer.userInfo.userId}");
     connect();
     loadInitialMessages();
@@ -42,6 +45,13 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       notLeaderList.add(writer);
     }
     notLeaderList.addAll(widget.chatRoom.readers.where((reader) => reader.chatMemberId != leader?.chatMemberId).toList());
+  }
+
+  Future<void> fetchIpAddress() async {
+    String? ip = await Localhost.getIp();
+    setState(() {
+      ipAddress = ip;
+    });
   }
 
   void connect() {
@@ -79,7 +89,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Future<List<dynamic>> fetchMessages() async {
     final response = await http.get(Uri.parse(
-        'http://${Localhost.getIp()}:8080/chat/${chatRoom.chatRoomId}/messages'));
+        'http://${ipAddress}:8080/chat/${chatRoom.chatRoomId}/messages'));
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
@@ -129,7 +139,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   Future<void> sendCheckRequest(int userId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://${Localhost.getIp()}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${userId}/check'),
+        Uri.parse('http://${ipAddress}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${userId}/check'),
         headers: {"Content-Type": "application/json"},
       );
 

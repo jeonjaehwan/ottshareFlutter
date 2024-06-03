@@ -96,7 +96,6 @@ class _StartPageState extends State<StartPage> {
     setState(() {
       ipAddress = ip;
     });
-    print("현재 IP 주소 = $ip");
   }
 
 

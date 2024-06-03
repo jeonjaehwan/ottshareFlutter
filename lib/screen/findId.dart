@@ -11,15 +11,30 @@ class FindIdPage extends StatefulWidget {
 }
 
 class _FindIdPageState extends State<FindIdPage> {
+  String? ipAddress;
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneNumberController = TextEditingController();
   final TextEditingController _certificationNumberController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchIpAddress();
+  }
+
+  Future<void> fetchIpAddress() async {
+    String? ip = await Localhost.getIp();
+    setState(() {
+      ipAddress = ip;
+    });
+  }
 
   /**
    * 인증번호 전송
    */
   Future<void> _sendVerificationCode(BuildContext context) async {
-    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/send';
+    final String apiUrl = 'http://${ipAddress}:8080/api/users/send';
 
     String name = _nameController.text;
     String phoneNumber = _phoneNumberController.text;
@@ -100,7 +115,7 @@ class _FindIdPageState extends State<FindIdPage> {
    * 인증번호 확인
    */
   Future<void> _checkConfirmationCode(BuildContext context) async {
-    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/find-username';
+    final String apiUrl = 'http://${ipAddress}:8080/api/users/find-username';
 
     String name = _nameController.text;
     String phoneNumber = _phoneNumberController.text;

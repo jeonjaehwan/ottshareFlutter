@@ -11,15 +11,30 @@ class FindPasswordPage extends StatefulWidget {
 }
 
 class _FindPasswordPageState extends State<FindPasswordPage> {
+  String? ipAddress;
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchIpAddress();
+  }
+
+  Future<void> fetchIpAddress() async {
+    String? ip = await Localhost.getIp();
+    setState(() {
+      ipAddress = ip;
+    });
+  }
 
   /**
    * 비밀번호 재설정 링크 전송
    */
   Future<void> _sendResetLink(BuildContext context) async {
-    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/find-password';
+    final String apiUrl = 'http://${ipAddress}:8080/api/users/find-password';
 
     String name = _nameController.text;
     String username = _usernameController.text;

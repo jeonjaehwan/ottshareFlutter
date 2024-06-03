@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../models/localhost.dart';
 import '../models/userInfo.dart';
 
 class MyPage extends StatefulWidget {
@@ -15,11 +16,20 @@ class MyPage extends StatefulWidget {
 
 class _MyPageState extends State<MyPage> {
   late UserInfo? userInfo;
+  String? ipAddress;
 
   @override
   void initState() {
     super.initState();
     userInfo = widget.userInfo;
+    fetchIpAddress();
+  }
+
+  Future<void> fetchIpAddress() async {
+    String? ip = await Localhost.getIp();
+    setState(() {
+      ipAddress = ip;
+    });
   }
 
   @override

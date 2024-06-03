@@ -24,6 +24,7 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignUpPage> {
+  String? ipAddress;
 
   TextEditingController _nameController = TextEditingController();
   TextEditingController _usernameController = TextEditingController();
@@ -35,8 +36,21 @@ class _SignupPageState extends State<SignUpPage> {
   TextEditingController _accountHolderController = TextEditingController();
   BankType? _selectedBank;
 
+  @override
+  void initState() {
+    super.initState();
+    fetchIpAddress();
+  }
+
+  Future<void> fetchIpAddress() async {
+    String? ip = await Localhost.getIp();
+    setState(() {
+      ipAddress = ip;
+    });
+  }
+
   Future<void> _registerUser(BuildContext context) async {
-    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/join';
+    final String apiUrl = 'http://${ipAddress}:8080/api/users/join';
 
     String name = _nameController.text;
     String username = _usernameController.text;

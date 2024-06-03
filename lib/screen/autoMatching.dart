@@ -18,6 +18,8 @@ class AutoMatchingPage extends StatefulWidget {
 }
 
 class _AutoMatchingPageState extends State<AutoMatchingPage> {
+  String? ipAddress;
+
   late UserInfo? userInfo;
   int? selectedOttIndex; // 선택된 OTT의 인덱스를 추적하는 변수
   bool? isLeader; // 방장이 선택되었는지 여부를 나타내는 상태
@@ -25,12 +27,12 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   bool isStartMatching = false;
 
 
-
   @override
   void initState() {
     super.initState();
     userInfo = widget.userInfo;
     isShareRoom = widget.userInfo?.isShareRoom;
+    fetchIpAddress();
 
     if (userInfo != null) {
       print('user info = ${widget.userInfo}');
@@ -43,6 +45,13 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     }
   }
 
+  Future<void> fetchIpAddress() async {
+    String? ip = await Localhost.getIp();
+    setState(() {
+      ipAddress = ip;
+    });
+  }
+
   Future<bool> getIsStartMatching() async {
 
     late bool isStartMatching;
@@ -51,7 +60,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
     // waitingUser에 해당 user가 있는지 확인
     final response = await http.get(
-      Uri.parse('http://${Localhost.getIp()}:8080/api/waitingUser/${id}'),
+      Uri.parse('http://${ipAddress}:8080/api/waitingUser/${id}'),
       headers: {"Content-Type": "application/json"},
     );
     isStartMatching = response.body.toLowerCase() == 'true';
@@ -103,7 +112,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     var body = jsonEncode(requestMap);
 
     final response = await http.post(
-      Uri.parse('http://${Localhost.getIp()}:8080/api/waitingUser/save'),
+      Uri.parse('http://${ipAddress}:8080/api/waitingUser/save'),
       headers: {"Content-Type": "application/json"},
     );
 
@@ -142,7 +151,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
     try {
       var url =
-      Uri.parse('http://${Localhost.getIp()}:8080/api/ottShareRoom/${userInfo!.userId}');
+      Uri.parse('http://${ipAddress}:8080/api/ottShareRoom/${userInfo!.userId}');
       var response = await http.get(url, headers: {"Content-Type": "application/json"});
       Map<String,dynamic> json = jsonDecode(response.body);
 

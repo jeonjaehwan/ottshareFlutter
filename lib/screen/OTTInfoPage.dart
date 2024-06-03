@@ -18,8 +18,23 @@ class OTTInfoPage extends StatefulWidget {
 }
 
 class _OTTInfoPageState extends State<OTTInfoPage> {
+  String? ipAddress;
+
   final _ottAccountIdController = TextEditingController();
   final _ottAccountPasswordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchIpAddress();
+  }
+
+  Future<void> fetchIpAddress() async {
+    String? ip = await Localhost.getIp();
+    setState(() {
+      ipAddress = ip;
+    });
+  }
 
   void _submitInfo() async {
     // OTT 계정 정보를 가져옴
@@ -60,7 +75,7 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
 
     // 서버로 POST 요청 보내기
     final response = await http.post(
-      Uri.parse('http://${Localhost.getIp()}:8080/api/waitingUser/save'),
+      Uri.parse('http://${ipAddress}:8080/api/waitingUser/save'),
       headers: {"Content-Type": "application/json"},
       body: requestBodyJson,
     );

@@ -16,14 +16,27 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  String? ipAddress;
 
   TextEditingController _usernameController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    fetchIpAddress();
+  }
+
+  Future<void> fetchIpAddress() async {
+    String? ip = await Localhost.getIp();
+    setState(() {
+      ipAddress = ip;
+    });
+  }
 
   Future<void> _login(BuildContext context) async {
 
-    final String apiUrl = 'http://${Localhost.getIp()}:8080/api/users/loginProc';
+    final String apiUrl = 'http://${ipAddress}:8080/api/users/loginProc';
 
     String username = _usernameController.text;
     String password = _passwordController.text;
