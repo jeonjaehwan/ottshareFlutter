@@ -286,8 +286,9 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     return Scaffold(
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),
+        // padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Align(
                 alignment: Alignment.centerLeft,
@@ -298,11 +299,11 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
                         color: Colors.black))),
             SizedBox(height: 10),
             Row(mainAxisAlignment: MainAxisAlignment.start, children: <Widget>[
-              ottBox('assets/netflix_logo.png', '넷플릭스', 0),
+              Expanded(child: ottBox('assets/netflix_logo.png', '넷플릭스', 0)),
               SizedBox(width: 20),
-              ottBox('assets/tving_logo.png', '티빙', 1),
+              Expanded(child: ottBox('assets/tving_logo.png', '티빙', 1)),
               SizedBox(width: 20),
-              ottBox('assets/wavve_logo.png', '웨이브', 2),
+              Expanded(child: ottBox('assets/wavve_logo.png', '웨이브', 2)),
             ]),
             SizedBox(height: 50),
             Align(
