@@ -29,9 +29,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   late ChatMember writer = chatRoom.writer;
   late ChatMember? leader = widget.chatRoom.findLeader();
   late List<ChatMember> notLeaderList = [];
+  late int nonLeaderCount;
   List<Message> messages = [];
 
   late List<bool> isCheckboxDisabled;
+
 
   @override
   void initState() {
@@ -44,6 +46,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       notLeaderList.add(writer);
     }
     notLeaderList.addAll(widget.chatRoom.readers.where((reader) => reader.chatMemberId != leader?.chatMemberId).toList());
+    nonLeaderCount = notLeaderList.length;
   }
 
 
@@ -634,29 +637,34 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       child: Text("요금 납부", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
                   ),
                   Expanded(
-                    child: ListView.separated(
-                        itemCount: notLeaderList.length,
-                        itemBuilder: (context, index) {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.max,
-                            children: <Widget>[
-                              SizedBox(width: 10),
-                              createCheckBox(context, writer, index),// 간격 추가
-                              // Expanded(
-                              //   child: Text(
-                              //     '${notLeaderList[index].userInfo.nickname}',
-                              //     style: TextStyle(fontSize: 16),
-                              //   ),
-                              // ),
-                            ],
-                          );
-                        },
-                        separatorBuilder: (BuildContext context, int index) {
-                          return Container(
-                            height: 10,
-                          );
-                        }),
+                    child: nonLeaderCount == 0
+                        ? Center(
+                      child: Text(''),
+                    )
+                        : ListView.separated(
+                      itemCount: nonLeaderCount,
+                      itemBuilder: (context, index) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.max,
+                          children: <Widget>[
+                            SizedBox(width: 10),
+                            createCheckBox(context, writer, index), // 간격 추가
+                            // Expanded(
+                            //   child: Text(
+                            //     '${notLeaderList[index].userInfo.nickname}',
+                            //     style: TextStyle(fontSize: 16),
+                            //   ),
+                            // ),
+                          ],
+                        );
+                      },
+                      separatorBuilder: (BuildContext context, int index) {
+                        return Container(
+                          height: 10,
+                        );
+                      },
+                    ),
                   ),
                   // 방 나가기 버튼
                   Container(
@@ -757,8 +765,10 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               TextButton(
                 onPressed: () {
                   // 다시 멤버 가져오기
-
                   context.pop();
+                  context.pop();
+                  context.pop();
+                  renewChatRoom();
                 },
                 child: Align(
                   alignment:
@@ -783,16 +793,17 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     }
   }
 
-  // Future<void> getChatRoom() async{
-  //   var url = Uri.parse(
-  //       'http://${Localhost.ip}:8080/api/ottShareRoom/${userInfo!.userId}');
-  //   var response =
-  //   await http.get(url, headers: {"Content-Type": "application/json"});
-  //   Map<String, dynamic> json = jsonDecode(response.body);
-  //
-  //   ChatRoom chatRoom = ChatRoom.fromJson(json, userInfo!);
-  //
-  // }
+  Future<void> renewChatRoom() async{
+    var url = Uri.parse(
+        'http://${Localhost.ip}:8080/api/ottShareRoom/${writer.userInfo.userId}');
+    var response =
+    await http.get(url, headers: {"Content-Type": "application/json"});
+    Map<String, dynamic> json = jsonDecode(response.body);
+
+    ChatRoom chatRoomImpl = ChatRoom.fromJson(json, writer.userInfo);
+
+    context.push("/chatRoom", extra: chatRoomImpl);
+  }
 
   Future<void> exitRoom(BuildContext context) async {
 

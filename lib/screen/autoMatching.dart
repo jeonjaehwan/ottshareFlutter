@@ -377,7 +377,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          content: Text('팀원을 모으고 있습니다.\n정말 자동매칭을 취소하시겠습니까?'),
+          content: Text('팀원을 모으고 있습니다.\n정말 취소하시겠습니까?'),
           actions: [
             TextButton(
               onPressed: () {
