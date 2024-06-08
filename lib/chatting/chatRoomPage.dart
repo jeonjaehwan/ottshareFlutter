@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:ott_share/chatting/message.dart';
 import 'package:ott_share/chatting/messageRequest.dart';
@@ -20,7 +21,6 @@ class ChatRoomPage extends StatefulWidget {
 }
 
 class _ChatRoomPageState extends State<ChatRoomPage> {
-  String? ipAddress;
 
   late StompClient stompClient;
   final TextEditingController textController = TextEditingController();
@@ -36,7 +36,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   @override
   void initState() {
     super.initState();
-    fetchIpAddress();
     print("init loginUser = ${writer.userInfo.userId}");
     connect();
     loadInitialMessages();
@@ -47,17 +46,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     notLeaderList.addAll(widget.chatRoom.readers.where((reader) => reader.chatMemberId != leader?.chatMemberId).toList());
   }
 
-  Future<void> fetchIpAddress() async {
-    String? ip = await Localhost.getIp();
-    setState(() {
-      ipAddress = ip;
-    });
-  }
 
   void connect() {
     stompClient = StompClient(
       config: StompConfig(
-        url: 'ws://${Localhost.getIp()}:8080/websocket',
+        url: 'ws://${Localhost.ip}:8080/websocket',
         onConnect: onConnect,
         onStompError: (dynamic error) => print(error.toString()),
         onWebSocketError: (dynamic error) => print(error.toString()),
@@ -89,7 +82,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Future<List<dynamic>> fetchMessages() async {
     final response = await http.get(Uri.parse(
-        'http://${ipAddress}:8080/chat/${chatRoom.chatRoomId}/messages'));
+        'http://${Localhost.ip}:8080/chat/${chatRoom.chatRoomId}/messages'));
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
@@ -118,8 +111,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             content: textController.text, writer: writer, createdAt: "임시");
         messages.add(message);
         textController.clear();
-        scrollToBottom();
       });
+      scrollToBottom();
     }
   }
 
@@ -139,7 +132,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   Future<void> sendCheckRequest(int userId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://${ipAddress}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${userId}/check'),
+        Uri.parse('http://${Localhost.ip}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${userId}/check'),
         headers: {"Content-Type": "application/json"},
       );
 
@@ -157,100 +150,73 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       BuildContext context, Message message, ChatMember writer) {
     final ChatMember messageWriter = message.writer;
 
-    if (messageWriter.userInfo.userId == writer.userInfo.userId) {
+    if (messageWriter.chatMemberId == writer.chatMemberId) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
-          Column(
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: <Widget>[
-              Container(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.65,
-                  maxHeight: 300,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Text(
-                    message.content,
-                    textAlign: TextAlign.left,
-                    style: TextStyle(fontSize: 20.0),
-                    softWrap: true,
-                    maxLines: null,
-                    overflow: TextOverflow.visible,
-                  ),
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
+          Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.6,
+              maxHeight: 200,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+              child: Text(
+                message.content,
+                textAlign: TextAlign.left,
+                style: TextStyle(fontSize: 16),
+                softWrap: true,
+                maxLines: null,
+                overflow: TextOverflow.visible,
               ),
-            ],
-          ),
-          Container(
-            height: 45,
-            width: 10,
-          ),
-          Container(
-            height: 65,
-            child: const CircleAvatar(
-              radius: 23,
-              backgroundImage: AssetImage('assets/wavve_logo.png'),
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12.0),
             ),
           ),
         ],
       );
     } else {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            height: 65,
-            child: const CircleAvatar(
-              radius: 23,
-              backgroundImage: AssetImage('assets/wavve_logo.png'),
-            ),
-          ),
-          Container(
-            height: 45,
-            width: 10,
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                child: Text(
-                  messageWriter.userInfo.nickname,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 17.0, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Container(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.65,
-                  maxHeight: 300,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
+      return IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start, // Align children at the top
+          children: <Widget>[
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
                   child: Text(
-                    message.content,
-                    textAlign: TextAlign.left,
-                    style: TextStyle(fontSize: 20.0),
-                    softWrap: true,
-                    maxLines: null,
-                    overflow: TextOverflow.visible,
+                    messageWriter.userInfo.nickname,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontSize: 14.0),
                   ),
                 ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15.0),
+                Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.6,
+                    maxHeight: 300,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    child: Text(
+                      message.content,
+                      textAlign: TextAlign.left,
+                      style: TextStyle(fontSize: 16.0),
+                      softWrap: true,
+                      maxLines: null,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       );
     }
   }
@@ -259,25 +225,31 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
     if (writer.isLeader == true) {
         return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
+            Container(
+              width: 10,
+            ),
             if (isCheckboxDisabled[index])
               Container(
-                height: 45,
                 width: 40,
                 child: CheckboxListTile(
+                  // activeColor: Color(0xffffdf24),
                   value: true,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      notLeaderList[index].isChecked = true;
-                    });
-                  },
+                  // onChanged: (bool? value) {
+                  //   setState(() {
+                  //     notLeaderList[index].isChecked = true;
+                  //   });
+                  // },
+                  onChanged: null,
                 ),
               )
             else
               Container(
-                height: 45,
+                height: 52,
                 width: 40,
                 child: CheckboxListTile(
+                  activeColor: Color(0xffffdf24),
                   value: notLeaderList[index].isChecked,
                   onChanged: (bool? value) {
                     setState(() {
@@ -286,46 +258,248 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                   },
                 ),
               ),
+            // SizedBox(width: 5),
             Container(
-              padding: EdgeInsets.all(5.0),
+              width: MediaQuery.of(context).size.width * 0.18,
+              child: Text(
+                '${notLeaderList[index].userInfo.nickname}',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+            // SizedBox(width: 3),
+            Container(
+              height: 35,
               child: ElevatedButton(
                 onPressed: () {
                   print("체크 상태 : ${notLeaderList[index].isChecked}");
                   if (isCheckboxDisabled[index] == true) {
-                    print("체크 해제 못 함");
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          content: Text("이미 체크된 회원입니다."),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () {
+                                context.pop(); // 다이얼로그 닫기
+                              },
+                              child: Align(
+                                alignment:
+                                Alignment.center, // 텍스트를 가운데 정렬
+                                child: Text('확인'),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                backgroundColor: Color(0xffffdf24),
+                                foregroundColor: Colors.black,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
                   } else {
                     if (notLeaderList[index].isChecked == true) {
-                      isCheckboxDisabled[index] = true;
-                      // 체크해달라고 요청
-                      sendCheckRequest(notLeaderList[index].chatMemberId);
-                      // 아이디, 비밀번호 보여줘야함.
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            content: Text("OTT 계정 정보가 해당 회원에게 나타납니다.\n요금 납부 여부를 꼭 확인해주세요!"),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () {
+                                  isCheckboxDisabled[index] = true;
+                                  // 체크해달라고 요청
+                                  sendCheckRequest(notLeaderList[index].chatMemberId);
+                                  context.pop();
+                                },
+                                child: Align(
+                                  alignment:
+                                  Alignment.center, // 텍스트를 가운데 정렬
+                                  child: Text('저장'),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  backgroundColor: Color(0xffffdf24),
+                                  foregroundColor: Colors.black,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  context.pop(); // 다이얼로그 닫기
+                                },
+                                child: Align(
+                                  alignment:
+                                  Alignment.center, // 텍스트를 가운데 정렬
+                                  child: Text('취소'),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  backgroundColor: Color(0xffE6E6E6),
+                                  foregroundColor: Colors.black,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+
                     } else {
-                      print("저장할 데이터 없음");
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            content: Text("체크를 하고 저장해주세요."),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () {
+                                  context.pop(); // 다이얼로그 닫기
+                                },
+                                child: Align(
+                                  alignment:
+                                  Alignment.center, // 텍스트를 가운데 정렬
+                                  child: Text('확인'),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  backgroundColor: Color(0xffffdf24),
+                                  foregroundColor: Colors.black,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
                     }
                   }
                   
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xffffdf24),
-                  foregroundColor: Colors.white,
+                  minimumSize: Size(50, 6),
+                  foregroundColor: Color(0xff1C1C1C),
+                  backgroundColor: Colors.white,
                   textStyle: TextStyle(
-                      fontSize: 15),
-                  padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                      fontSize: 17),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(color: Colors.black12, width: 2)
+                  ),
+                  elevation: 0,
+                  padding: EdgeInsets.zero,
                 ),
 
                 child: Text('저장'),
               ),
+            ),
+            SizedBox(width: 7),
+            Container(
+              height: 35,
+                child: ElevatedButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            content: Text('이유 없이 강퇴할 경우, 불이익이 있을 수 있습니다.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  context.pop();
+                                  kickMember(context, notLeaderList[index].chatMemberId);
+                                },
+                                child: Align(
+                                  alignment:
+                                  Alignment.center, // 텍스트를 가운데 정렬
+                                  child: Text('강퇴'),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  backgroundColor: Color(0xffffdf24),
+                                  foregroundColor: Colors.black,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  context.pop();
+                                },
+                                child: Align(
+                                  alignment:
+                                  Alignment.center, // 텍스트를 가운데 정렬
+                                  child: Text('취소'),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  backgroundColor: Color(0xffE6E6E6),
+                                  foregroundColor: Colors.black,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+
+                    },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(50, 6),
+                    foregroundColor: Color(0xff1C1C1C),
+                    backgroundColor: Colors.white,
+                    textStyle: TextStyle(
+                        fontSize: 17),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: Colors.black12, width: 2)
+                    ),
+                    elevation: 0,
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: Text('강퇴'),
+                )
             )
           ]
         );
       } else {
-        return Container(
-          height: 45,
-          width: 40,
-          child: CheckboxListTile(
-            value: notLeaderList[index].isChecked,
-            onChanged: null,
-          ),
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 10,
+            ),
+            Container(
+              height: 52,
+              width: 40,
+              child: CheckboxListTile(
+                activeColor: Color(0xffffdf24),
+                value: notLeaderList[index].isChecked,
+                onChanged: null,
+              ),
+            ),
+            SizedBox(width: 5),
+            Container(
+              width: MediaQuery.of(context).size.width * 0.2,
+              child: Text(
+                '${notLeaderList[index].userInfo.nickname}',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
         );
     }
   }
@@ -337,39 +511,49 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         resizeToAvoidBottomInset: true,
         appBar: AppBar(
           title: Text('${chatRoom.ottType} 채팅방'),
-          backgroundColor: Color(0xffffdf24),
+          backgroundColor: Colors.transparent,
+          // backgroundColor: Color(0xffffdf24),
+          shadowColor: Color(0xffffdf24),
+          surfaceTintColor: Color(0xffffdf24),
+          scrolledUnderElevation: 0,
           centerTitle: true,
-          elevation: 0.0,
         ),
         body: Column(
           children: <Widget>[
             if (writer.chatMemberId == leader!.chatMemberId || writer.isChecked)
-              Container(
-                width: double.infinity,
-                height: 73,
-                color: Colors.yellow[200],
-                padding: EdgeInsets.all(7.0),
-                child: Row(
-                  children: [
-                    Icon(Icons.announcement_outlined, color: Colors.black),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        "${chatRoom.ottType} 아이디 : ${chatRoom.ottId}"
-                            "\n${chatRoom.ottType} 비밀번호 : ${chatRoom.ottPassword}",
-                        style: TextStyle(color: Colors.black, fontSize: 18),
-                      ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 5),
+                child:
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10.0),
                     ),
-                  ],
-                ),
+                    width: double.infinity,
+                    height: 65,
+                    padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    child: Row(
+                      children: [
+                        Icon(Icons.announcement_outlined, color: Colors.black),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            "${chatRoom.ottType} 아이디 : ${chatRoom.ottId}"
+                                "\n${chatRoom.ottType} 비밀번호 : ${chatRoom.ottPassword}",
+                            style: TextStyle(color: Colors.black, fontSize: 17),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(15, 0, 15, 15),
+                padding: const EdgeInsets.fromLTRB(5, 0, 5, 5),
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ListView.separated(
-                    // reverse: true,
+                    padding: EdgeInsets.all(2),
                     shrinkWrap: true,
                     controller: scrollController,
                     itemCount: messages.length,
@@ -378,7 +562,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                     },
                     separatorBuilder: (BuildContext context, int index) {
                       return Container(
-                        height: 20,
+                        height: 5,
                       );
                     },
                   ),
@@ -389,94 +573,249 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               controller: textController,
               decoration: InputDecoration(
                 filled: true,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
                 fillColor: Colors.white,
                 suffixIcon: IconButton(
                   icon: Icon(Icons.send),
                   onPressed: () => _sendMessage(),
                 ),
               ),
+              onTap: () {
+                // textField클릭했을 때, 스크롤 맨 아래로 가게
+                Future.delayed(Duration(milliseconds: 400), () {
+                  scrollController.jumpTo(scrollController.position.maxScrollExtent);
+                });
+              },
               onSubmitted: (_) => _sendMessage(),
               maxLines: null,
             ),
           ],
         ),
-        endDrawer: Drawer(
-          width: MediaQuery.of(context).size.width * 0.7,
-          backgroundColor: Colors.white,
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.7,
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              children: <Widget>[
-                ListTile(
-                  leading: CircleAvatar(
-                    radius: 20,
-                    backgroundImage: AssetImage('assets/wavve_logo.png'),
+        endDrawer: SafeArea(
+          child: Drawer(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero, // 모든 모서리를 각지게 설정합니다.
+            ),
+            width: MediaQuery.of(context).size.width * 0.75,
+            backgroundColor: Colors.white,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.75,
+              padding: EdgeInsets.symmetric(vertical: 40, horizontal: 15),
+              child: Column(
+                children: <Widget>[
+                  ListTile(
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                          decoration: BoxDecoration(
+                              color: Colors.black87,
+                            borderRadius: BorderRadius.circular(10)
+                          ),
+                          height: 32,
+                          child: Text('방장', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w500, color: Colors.white)),
+                        ),
+                        SizedBox(width: 15),
+                        Container(
+                          alignment: Alignment.center,
+                          height: 30,
+                          child: Text('${leader!.userInfo.nickname}', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
                   ),
-                  title: Text('방장 : ${leader!.userInfo.nickname}'), // 방장 닉네임
-                ),
-                Divider(),
-                SizedBox(height: 15),
-                Container(
-                  height: 45,
-                  child: Text("요금 납부 확인", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
-                ),
-                Expanded(
-                  child: ListView.separated(
-                      itemCount: notLeaderList.length,
-                      itemBuilder: (context, index) {
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.max,
-                          children: <Widget>[
-                            Container(
-                              height: 45,
-                              width: 70,
-                              child: CircleAvatar(
-                                radius: 20,
-                                backgroundImage: AssetImage('assets/wavve_logo.png'),
-                              ),
-                            ),
-                            SizedBox(width: 10), // 간격 추가
-                            Expanded(
-                              child: Text(
-                                '${notLeaderList[index].userInfo.nickname}',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                            ),
-                            createCheckBox(context, writer, index),
-                          ],
+                  Divider(),
+                  SizedBox(height: 30),
+                  Container(
+                      height: 45,
+                      child: Text("요금 납부", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
+                  ),
+                  Expanded(
+                    child: ListView.separated(
+                        itemCount: notLeaderList.length,
+                        itemBuilder: (context, index) {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.max,
+                            children: <Widget>[
+                              SizedBox(width: 10),
+                              createCheckBox(context, writer, index),// 간격 추가
+                              // Expanded(
+                              //   child: Text(
+                              //     '${notLeaderList[index].userInfo.nickname}',
+                              //     style: TextStyle(fontSize: 16),
+                              //   ),
+                              // ),
+                            ],
+                          );
+                        },
+                        separatorBuilder: (BuildContext context, int index) {
+                          return Container(
+                            height: 10,
+                          );
+                        }),
+                  ),
+                  // 방 나가기 버튼
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 25, vertical: 5),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              content: Text('채팅방을 나가시겠어요?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    exitRoom(context);
+                                  },
+                                  child: Align(
+                                    alignment:
+                                    Alignment.center, // 텍스트를 가운데 정렬
+                                    child: Text('나가기'),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    backgroundColor: Color(0xffffdf24),
+                                    foregroundColor: Colors.black,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    context.pop();
+                                  },
+                                  child: Align(
+                                    alignment:
+                                    Alignment.center, // 텍스트를 가운데 정렬
+                                    child: Text('취소'),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    backgroundColor: Color(0xffE6E6E6),
+                                    foregroundColor: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         );
                       },
-                      separatorBuilder: (BuildContext context, int index) {
-                        return Container(
-                          height: 10,
-                        );
-                      }),
-                ),
-                // 방 나가기 버튼
-                Container(
-                  padding: EdgeInsets.all(10.0),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // 방 삭제 요청
-
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xffffdf24),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 32.0, vertical: 16.0),
-                      textStyle: TextStyle(
-                          fontSize: 18.0, fontWeight: FontWeight.bold),
+                      style: ElevatedButton.styleFrom(
+                        fixedSize: Size(110,50),
+                        foregroundColor: Color(0xff1C1C1C),
+                        textStyle: TextStyle(
+                            fontSize: 19, fontWeight: FontWeight.bold),
+                        backgroundColor: Color(0xffffdf24),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                        padding: EdgeInsets.zero,
+                      ),
+                      child: Text('방 나가기'),
                     ),
-                    child: Text('방 나가기'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ));
+        ) );
+  }
+
+  Future<void> kickMember(BuildContext context, int chatMemberId) async {
+    print("방이랑 회원 정보 = ${chatMemberId} + ${chatRoom.chatRoomId}");
+    
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${chatMemberId}/kick';
+
+    final response = await http.delete(
+      Uri.parse(apiUrl),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+
+    print("response.statusCode = ${response.statusCode}");
+    print("response.body = ${response.body}");
+
+    if (response.statusCode == 200) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: Text('해당 회원이 강제퇴장되었습니다.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  // 다시 멤버 가져오기
+
+                  context.pop();
+                },
+                child: Align(
+                  alignment:
+                  Alignment.center, // 텍스트를 가운데 정렬
+                  child: Text('확인'),
+                ),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: Color(0xffffdf24),
+                  foregroundColor: Colors.black,
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      print("강퇴 오류");
+    }
+  }
+
+  // Future<void> getChatRoom() async{
+  //   var url = Uri.parse(
+  //       'http://${Localhost.ip}:8080/api/ottShareRoom/${userInfo!.userId}');
+  //   var response =
+  //   await http.get(url, headers: {"Content-Type": "application/json"});
+  //   Map<String, dynamic> json = jsonDecode(response.body);
+  //
+  //   ChatRoom chatRoom = ChatRoom.fromJson(json, userInfo!);
+  //
+  // }
+
+  Future<void> exitRoom(BuildContext context) async {
+
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${writer.chatMemberId}/leave';
+
+    final response = await http.delete(
+      Uri.parse(apiUrl),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+
+    print("response.statusCode = ${response.statusCode}");
+    print("response.body = ${response.body}");
+
+
+    if (response.statusCode == 200) {
+
+      context.go("/autoMatching?selectedIndex=0");
+
+    } else {
+      print("방 나가기 오류");
+    }
   }
 
   @override

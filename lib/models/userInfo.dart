@@ -1,3 +1,5 @@
+import 'package:ott_share/models/bankType.dart';
+
 class UserInfo {
   final int userId; // Dart에서는 int 타입을 사용합니다.
   final String username;
@@ -6,7 +8,7 @@ class UserInfo {
   final String name;
   final String password;
   final String phoneNumber;
-  final String bank;
+  final BankType bank;
   final String account;
   final String accountHolder;
   final String role;
@@ -32,6 +34,8 @@ class UserInfo {
 
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
+    BankType bankType = BankTypeExtension.fromString(json['bank']);
+
     return UserInfo(
       userId: json['userId'] as int? ?? 0, // Long 대신 int를 사용하고, 기본값을 제공합니다.
       username: json['username'] as String? ?? '', // 기본값으로 빈 문자열 제공
@@ -40,7 +44,7 @@ class UserInfo {
       name: json['name'] as String? ?? '',
       password: json['password'] as String? ?? '',
       phoneNumber: json['phoneNumber'] as String? ?? '',
-      bank: json['bank'] as String? ?? '',
+      bank: bankType ?? BankType.etc,
       account: json['account'] as String? ?? '',
       accountHolder: json['accountHolder'] as String? ?? '',
       role: json['role'] as String? ?? '',
@@ -57,7 +61,7 @@ class UserInfo {
       'name': name,
       'password': password,
       'phoneNumber': phoneNumber,
-      'bank': bank,
+      'bank': bank.toString().split('.').last ?? '',
       'account': account,
       'accountHolder': accountHolder,
       'role': role,

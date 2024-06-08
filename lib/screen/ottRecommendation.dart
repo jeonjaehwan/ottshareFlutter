@@ -35,29 +35,30 @@ class _OttRecommendationPageState extends State<OttRecommendationPage> {
         body: Column(
           children: [
             Container(height: 150),
+            // 질문 박스
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                    width: 330.0,
-                    height: 300,
-                    padding: EdgeInsets.all(20.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(50.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
-                          spreadRadius: 5,
-                          blurRadius: 7,
-                          offset: Offset(0, 3),
+                Padding(padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 0),
+                    child: Container(
+                        width: 320,
+                        height: 290,
+                        padding: EdgeInsets.all(20.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(50.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.5),
+                              spreadRadius: 5,
+                              blurRadius: 7,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: StartPage())
+                        child: StartPage())),
               ],
             ),
-            Container(height: 150)
           ],
         ));
   }
@@ -73,7 +74,6 @@ class StartPage extends StatefulWidget {
 }
 
 class _StartPageState extends State<StartPage> {
-  String? ipAddress;
 
   int pageCount = 1;
   String buttonText = '시작';
@@ -88,16 +88,7 @@ class _StartPageState extends State<StartPage> {
   void initState() {
     super.initState();
     userInfo = widget.userInfo; // null일 수 있음
-    fetchIpAddress();
   }
-
-  Future<void> fetchIpAddress() async {
-    String? ip = await Localhost.getIp();
-    setState(() {
-      ipAddress = ip;
-    });
-  }
-
 
   Widget body = Center(
     child: Column(
@@ -119,7 +110,7 @@ class _StartPageState extends State<StartPage> {
       children: [
         body,
         Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(10.0),
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Row(
@@ -144,18 +135,14 @@ class _StartPageState extends State<StartPage> {
                             }));
                         pageCount++;
                         isQuestionSelected = false;
-                      } else if (pageCount == 17) {
-                        print("page 17");
+                      } else if (pageCount == 11) {
                         // autoMatching 페이지로 넘어가는 로직
-                        setState(() {
-                          _selectedIndex = 3;
-                        });
-                        context.go("/autoMatching?selectedIndex=$_selectedIndex");
+                        context.pushReplacement("/autoMatching?selectedIndex=0");
                       }
                       else {
                         if (isQuestionSelected) {
                           // 선택된 상태인지 확인
-                          if (pageCount == 16) {
+                          if (pageCount == 10) {
                             buttonText = '자동매칭 시작';
                             String? result = await sendGetResultRequest();
                             setState(() {
@@ -165,7 +152,7 @@ class _StartPageState extends State<StartPage> {
                               );
                             });
                           } else {
-                            if (pageCount == 15) {
+                            if (pageCount == 9) {
                               buttonText = '결과 확인';
                             }
                             await sendCountOttScoreRequest(beforeResponseBody!);
@@ -194,14 +181,25 @@ class _StartPageState extends State<StartPage> {
                             context: context,
                             builder: (BuildContext context) {
                               return AlertDialog(
-                                title: Text('경고'),
-                                content: Text('두 선택지 중 하나를 선택하세요.'),
+                                content: Text('둘 중 하나를 선택하세요.'),
                                 actions: [
                                   TextButton(
                                     onPressed: () {
                                       context.pop();
                                     },
-                                    child: Text('확인'),
+                                    child: Align(
+                                      alignment:
+                                      Alignment.center, // 텍스트를 가운데 정렬
+                                      child: Text('확인'),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      backgroundColor: Color(0xffffdf24),
+                                      foregroundColor: Colors.black,
+                                    ),
                                   ),
                                 ],
                               );
@@ -213,12 +211,12 @@ class _StartPageState extends State<StartPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xffffdf24),
                       foregroundColor: Colors.black,
-                      minimumSize: Size(260, 35),
+                      minimumSize: Size(240, 35),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: Text(buttonText, style: TextStyle(fontSize: 22)),
+                    child: Text(buttonText, style: TextStyle(fontSize: 22, color: Color(0xff1C1C1C))),
                   )
                 ],
               ),
@@ -232,7 +230,7 @@ class _StartPageState extends State<StartPage> {
     try {
 
       final response = await http.get(
-        Uri.parse('http://${ipAddress}:8080/api/ottRecQuestions/${pageCount}'),
+        Uri.parse('http://${Localhost.ip}:8080/api/ottRecQuestions/${pageCount}'),
         headers: {
           'Accept-Encoding': 'utf-8',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -265,7 +263,7 @@ class _StartPageState extends State<StartPage> {
     print(requestMap);
 
     await http.post(
-      Uri.parse('http://${ipAddress}:8080/api/ottRecQuestions/${pageCount}'),
+      Uri.parse('http://${Localhost.ip}:8080/api/ottRecQuestions/${pageCount}'),
       headers: {
         "Content-Encoding": "utf-8",
         "Content-Type": "application/json"
@@ -277,8 +275,8 @@ class _StartPageState extends State<StartPage> {
   }
 
   Future<String?> sendGetResultRequest() async {
-    final response = await http.post(
-      Uri.parse('http://${ipAddress}:8080/api/ottRecQuestions/16'),
+    final response = await http.get(
+      Uri.parse('http://${Localhost.ip}:8080/api/ottRecQuestions/10'),
       headers: {"Content-Encoding": "utf-8"},
     );
 
@@ -330,7 +328,7 @@ class _FirstQuestionPageState extends State<FirstQuestionPage> {
               side: BorderSide(color: Color(0xffffdf24), width: 2)),
         ),
         child: Container(
-          height: 70,
+          height: 60,
           alignment: Alignment.center,
           child: Text(label, style: TextStyle(fontSize: 17)),
         ),
@@ -344,7 +342,7 @@ class _FirstQuestionPageState extends State<FirstQuestionPage> {
           Container(
             child: Center(
               child: Text(
-                '질문 ${widget.questionInfo!.questionId}/15',
+                '질문 ${widget.questionInfo!.questionId}/9',
                 style: TextStyle(fontSize: 25, fontWeight: FontWeight.w600),
               ),
             ),
@@ -360,7 +358,7 @@ class _FirstQuestionPageState extends State<FirstQuestionPage> {
                   true),
             ),
           ),
-          SizedBox(height: 15),
+          SizedBox(height: 10),
           Container(
             width: 260,
             height: 65,
@@ -408,8 +406,8 @@ class _ResultPageState extends State<ResultPage> {
                 ),
                 SizedBox(height: 10),
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 70,
+                  height: 70,
                   child: Image.asset(
                     'assets/${widget.result.toString().toLowerCase()}_logo.png', // 이미지 경로 설정
                     fit: BoxFit.cover,

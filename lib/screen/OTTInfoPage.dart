@@ -18,7 +18,6 @@ class OTTInfoPage extends StatefulWidget {
 }
 
 class _OTTInfoPageState extends State<OTTInfoPage> {
-  String? ipAddress;
 
   final _ottAccountIdController = TextEditingController();
   final _ottAccountPasswordController = TextEditingController();
@@ -26,15 +25,8 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
   @override
   void initState() {
     super.initState();
-    fetchIpAddress();
   }
 
-  Future<void> fetchIpAddress() async {
-    String? ip = await Localhost.getIp();
-    setState(() {
-      ipAddress = ip;
-    });
-  }
 
   void _submitInfo() async {
     // OTT 계정 정보를 가져옴
@@ -75,13 +67,41 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
 
     // 서버로 POST 요청 보내기
     final response = await http.post(
-      Uri.parse('http://${ipAddress}:8080/api/waitingUser/save'),
+      Uri.parse('http://${Localhost.ip}:8080/api/waitingUser/save'),
       headers: {"Content-Type": "application/json"},
       body: requestBodyJson,
     );
 
     if (response.statusCode == 200) {
       context.pop();
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: Text('자동매칭이 시작되었습니다.\n잠시만 기다려주세요!'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  context.pop();
+                },
+                child: Align(
+                  alignment:
+                  Alignment.center, // 텍스트를 가운데 정렬
+                  child: Text('확인'),
+                ),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: Color(0xffffdf24),
+                  foregroundColor: Colors.black,
+                ),
+              ),
+            ],
+          );
+        },
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('자동 매칭 실패')));
@@ -94,7 +114,18 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("OTT 계정 정보 입력"),
+        title: Text("OTT 계정 정보"),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_rounded, color: Colors.black54),
+          onPressed: () {
+            context.pop();
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -102,19 +133,34 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
           children: <Widget>[
             TextField(
               controller: _ottAccountIdController,
-              decoration: InputDecoration(labelText: 'OTT 계정 아이디'),
+              decoration: InputDecoration(
+                  hintText: '아이디',
+                  hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
+                  contentPadding: EdgeInsets.all(7)
+              ),
             ),
             SizedBox(height: 20),
             TextField(
               controller: _ottAccountPasswordController,
-              decoration: InputDecoration(labelText: 'OTT 계정 비밀번호'),
+              decoration: InputDecoration(
+                  hintText: '비밀번호',
+                  hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
+                  contentPadding: EdgeInsets.all(7)
+              ),
               obscureText: true,
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 35),
             ElevatedButton(
               onPressed: _submitInfo,
-              child: Text('완료'),
-            )
+              style: ElevatedButton.styleFrom(
+                fixedSize: Size(MediaQuery.of(context).size.width,50),
+                backgroundColor: Color(0xffffdf24),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10), // 버튼 모서리를 둥글게 만듦
+                ),
+              ),
+              child: Text('완료', style: TextStyle(fontSize: 18, color: Color(0xff1C1C1C))),
+            ),
           ],
         ),
       ),

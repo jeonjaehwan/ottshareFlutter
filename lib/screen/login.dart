@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:ott_share/models/bankType.dart';
 import '../models/localhost.dart';
 import '../models/loginStorage.dart';
 
@@ -16,7 +18,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  String? ipAddress;
 
   TextEditingController _usernameController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
@@ -24,19 +25,19 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    fetchIpAddress();
   }
 
-  Future<void> fetchIpAddress() async {
-    String? ip = await Localhost.getIp();
-    setState(() {
-      ipAddress = ip;
-    });
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
+
 
   Future<void> _login(BuildContext context) async {
 
-    final String apiUrl = 'http://${ipAddress}:8080/api/users/loginProc';
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/loginProc';
 
     String username = _usernameController.text;
     String password = _passwordController.text;
@@ -58,43 +59,43 @@ class _LoginPageState extends State<LoginPage> {
         body: jsonEncode(data),
       );
 
+      print("response.statusCode = ${response.statusCode}");
+      print("response.body = ${response.body}");
+
 
       if (response.statusCode == 200) {
         final userInfoJson = jsonDecode(response.body);
         UserInfo userInfo = UserInfo.fromJson(userInfoJson);
         await LoginStorage.saveUserId(userInfo.userId); // 로그인 성공 시 사용자 ID 저장
 
-        showDialog(
-          context: context,
-          builder: (_) {
-            return AlertDialog(
-              title: Text('로그인 성공'),
-              content: Text('로그인이 성공적으로 완료되었습니다.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    context.pop();
-                    context.go("/home?isLoggedIn=true", extra: userInfo);
-                  },
-                  child: Text('확인'),
-                ),
-              ],
-            );
-          },
-        );
+
+        context.go("/home?isLoggedIn=true", extra: userInfo);
+
       } else {
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('로그인 실패'),
               content: Text('아이디 또는 비밀번호가 잘못되었습니다.'),
+              actionsAlignment: MainAxisAlignment.center,
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
+                    context.pop();
                   },
-                  child: Text('확인'),
+                  child: Align(
+                    alignment:
+                    Alignment.center, // 텍스트를 가운데 정렬
+                    child: Text('확인'),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    backgroundColor: Color(0xffffdf24),
+                    foregroundColor: Colors.black,
+                  ),
                 ),
               ],
             );
@@ -107,14 +108,24 @@ class _LoginPageState extends State<LoginPage> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('네트워크 오류'),
             content: Text('로그인 중 오류가 발생했습니다. 네트워크 상태를 확인해주세요.'),
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  context.pop();
                 },
-                child: Text('확인'),
+                child: Align(
+                  alignment: Alignment.center, // 텍스트를 가운데 정렬
+                  child: Text('확인'),
+                ),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: Color(0xffffdf24),
+                  foregroundColor: Colors.black,
+                ),
               ),
             ],
           );
@@ -123,12 +134,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -136,69 +142,110 @@ class _LoginPageState extends State<LoginPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('로그인'),
+        title: Text("로그인", style: TextStyle(fontSize: 19),),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_rounded, color: Colors.black54),
+          onPressed: () {
+            context.pop();
+          },
+        ),
       ),
       body: SingleChildScrollView( // SingleChildScrollView 추가
         child: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               TextField(
                 controller: _usernameController,
-                decoration: InputDecoration(labelText: '아이디'),
+                decoration: InputDecoration(
+                    hintText: '아이디 입력',
+                    hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
+                  contentPadding: EdgeInsets.all(7)),
               ),
               SizedBox(height: 12),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: InputDecoration(labelText: '비밀번호'),
+                decoration: InputDecoration(
+                    hintText: '비밀번호 입력',
+                    hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
+                    contentPadding: EdgeInsets.all(7)
+                ),
               ),
               SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
                   _login(context); // _login 메서드 호출 시 context 전달
                 },
-                child: Text('로그인'),
+                style: ElevatedButton.styleFrom(
+                  fixedSize: Size(MediaQuery.of(context).size.width,50),
+                  backgroundColor: Color(0xffffdf24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10), // 버튼 모서리를 둥글게 만듦
+                  ),
+                ),
+                child: Text('로그인',style: TextStyle(fontSize: 18, color: Color(0xff1C1C1C)),),
               ),
               SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  SizedBox(width: 27),
                   TextButton(
                     onPressed: () {
-                      context.push('/findId');
+                      context.push('/findIdAndPassword', extra: 0);
                     },
-                    child: Text('아이디 찾기'),
+                    child: Text('아이디 찾기',style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  ),
+                  SizedBox(width: 10),
+                  Container(
+                    width: 1,
+                    height: 15,
+                    color: Colors.grey,
+                  ),
+                  SizedBox(width: 10),
+                  TextButton(
+                    onPressed: () {
+                      context.push('/findIdAndPassword', extra: 1);
+                    },
+                    child: Text('비밀번호 찾기',style: TextStyle(fontSize: 14, color: Colors.grey)),
                   ),
                   SizedBox(width: 12),
-                  TextButton(
-                    onPressed: () {
-                      context.push('/findPassword');
-                    },
-                    child: Text('비밀번호 찾기'),
-                  ),
-                  SizedBox(width: 12),
-                  TextButton(
-                    onPressed: () {
-                      context.push('/signUp');
-                    },
-                    child: Text('회원가입'),
-                  ),
                 ],
               ),
+              Container(height: MediaQuery.of(context).size.height * 0.32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
+                  _getKakaoLoginButton(context),
+                  SizedBox(width: 25),
                   _getGoogleLoginButton(context),
                 ],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  _getKakaoLoginButton(context)
-                ],
-              )
+              SizedBox(height: 23),
+              ElevatedButton(
+                onPressed: () {
+                  context.push('/signUp');
+                },
+                child: Text('회원가입',textWidthBasis: TextWidthBasis.longestLine, style: TextStyle(fontSize: 18)),
+                style: ElevatedButton.styleFrom(
+                  fixedSize: Size(MediaQuery.of(context).size.width,50),
+                  foregroundColor: Color(0xff1C1C1C),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: Colors.black12, width: 1.5)
+                  ),
+                  elevation: 0
+                ),
+
+              ),
             ],
           ),
         ),
@@ -208,24 +255,16 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _getGoogleLoginButton(BuildContext context) {
     return Center( // Center 위젯 추가
-      child: InkWell(
-        onTap: () {
+      child: FloatingActionButton(
+        onPressed: () {
           _loginWithGoogle(context);
         },
-        child: Card(
-          margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
-          elevation: 2,
-          child: Container(
-            height: 45,
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Image.asset('assets/google_login.png', height: 40, width: 300,),
-            ],),
-          ),
+        heroTag: null,
+        shape: const CircleBorder(side: BorderSide(width: 0.4)),
+        elevation: 0,
+        child: const CircleAvatar(
+          radius: 29,
+          backgroundImage: AssetImage('assets/google_login.png'),
         ),
       ),
     );
@@ -233,29 +272,19 @@ class _LoginPageState extends State<LoginPage> {
 
 
   Widget _getKakaoLoginButton(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        _loginWithKakao(context);
-      },
-      child: Card(
-        margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
-        elevation: 2,
-        child: Container(
-          height: 45,
-          decoration: BoxDecoration(
-            color: Colors.yellow,
-            borderRadius: BorderRadius.circular(7),
-          ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Image.asset('assets/kakao_login.png', height: 40, width: 270,),
-            const SizedBox(
-              width: 30,
-            ),
-          ],),
-        ),
+    return FloatingActionButton(
+        onPressed: () {
+          _loginWithKakao(context);
+        },
+      heroTag: null,
+        shape: CircleBorder(),
+        elevation: 0,
+      child: const CircleAvatar(
+        radius: 29,
+        backgroundImage: AssetImage('assets/kakao_login.png'),
       ),
-    );
+      );
+
   }
 
 
@@ -272,7 +301,6 @@ class _LoginPageState extends State<LoginPage> {
           '\n닉네임: ${user.displayName}'
           '\n이메일: ${user.email}');
 
-      // 서버에 회원 정보 전송 후 회원가입 진행
 
       UserInfo userInfo = UserInfo(
         userId: 0,
@@ -280,32 +308,69 @@ class _LoginPageState extends State<LoginPage> {
           nickname: user.displayName.toString(),
           email: user.email,
           name: user.displayName.toString(),
-          password: "password",
-          phoneNumber: "phoneNumber",
-          bank: "bank",
-          account: "account",
-          accountHolder: "accountHolder", role: "role",
+          password: "",
+          phoneNumber: "",
+          bank: BankType.etc,
+          account: "",
+          accountHolder: "", role: "SOCIAL",
           isShareRoom: false);
 
-      // 메인페이지로 이동
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('로그인 성공'),
-            content: Text('로그인이 성공적으로 완료되었습니다.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  context.pop(); // 다이얼로그 닫기
-                  context.go("/home?userInfo=${userInfo}&isLoggedIn=true");
-                },
-                child: Text('확인'),
-              ),
-            ],
+      try {
+        final response = await http.post(
+          Uri.parse('http://${Localhost.ip}:8080/api/users/google-login'),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(userInfo),
+        );
+
+        print("response.statusCode=${response.statusCode}");
+        print("response.body=${response.body}");
+
+
+        if (response.statusCode == 200) {
+          final userInfoJson = jsonDecode(response.body);
+          UserInfo userInfo = UserInfo.fromJson(userInfoJson);
+
+          await LoginStorage.saveUserId(userInfo.userId); // 로그인 성공 시 사용자 ID 저장
+
+          context.go("/home?isLoggedIn=true", extra: userInfo);
+
+        } else {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                content: Text('서버 오류 발생'),
+                actionsAlignment: MainAxisAlignment.center,
+                actions: [
+                  TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: Align(
+                        alignment:
+                        Alignment.center, // 텍스트를 가운데 정렬
+                        child: Text('확인'),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        backgroundColor: Color(0xffffdf24),
+                        foregroundColor: Colors.black,
+                      ),
+                  ),
+                ],
+              );
+            },
           );
-        },
-      );
+        }
+      } catch (error) {
+        print(error);
+      }
+
     }
   }
 
@@ -324,14 +389,12 @@ class _LoginPageState extends State<LoginPage> {
               '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
               '\n이메일: ${user.kakaoAccount?.email}');
 
-          // 서버에 회원 정보 전송
 
           // 메인페이지로 이동
           showDialog(
             context: context,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: Text('로그인 성공'),
                 content: Text('로그인이 성공적으로 완료되었습니다.'),
                 actions: [
                   TextButton(
@@ -339,7 +402,19 @@ class _LoginPageState extends State<LoginPage> {
                       context.pop(); // 다이얼로그 닫기
                       context.go("/home?selectedIndex=0&isLoggedIn=true");
                     },
-                    child: Text('확인'),
+                    child: Align(
+                      alignment:
+                      Alignment.center, // 텍스트를 가운데 정렬
+                      child: Text('확인'),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Color(0xffffdf24),
+                      foregroundColor: Colors.black,
+                    ),
                   ),
                 ],
               );
@@ -376,7 +451,19 @@ class _LoginPageState extends State<LoginPage> {
                         context.pop(); // 다이얼로그 닫기
                         context.go("/home?selectedIndex=0&isLoggedIn=true");
                       },
-                      child: Text('확인'),
+                      child: Align(
+                        alignment:
+                        Alignment.center, // 텍스트를 가운데 정렬
+                        child: Text('확인'),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        backgroundColor: Color(0xffffdf24),
+                        foregroundColor: Colors.black,
+                      ),
                     ),
                   ],
                 );
@@ -409,7 +496,19 @@ class _LoginPageState extends State<LoginPage> {
                       context.pop(); // 다이얼로그 닫기
                       context.go("/home?selectedIndex=0&isLoggedIn=true");
                     },
-                    child: Text('확인'),
+                    child: Align(
+                      alignment:
+                      Alignment.center, // 텍스트를 가운데 정렬
+                      child: Text('확인'),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Color(0xffffdf24),
+                      foregroundColor: Colors.black,
+                    ),
                   ),
                 ],
               );

@@ -1,17 +1,15 @@
-import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
-import 'package:ott_share/screen/FindPassword.dart';
-import 'package:ott_share/screen/FindId.dart';
+import 'package:ott_share/screen/EditProfilePage.dart';
+import 'package:ott_share/screen/FindIdAndPassword.dart';
 import 'package:ott_share/screen/Login.dart';
 import 'package:ott_share/screen/OTTInfoPage.dart';
 import 'package:ott_share/screen/SignUp.dart';
 import 'package:ott_share/screen/autoMatching.dart';
 import 'package:ott_share/chatting/chatRoomPage.dart';
-import 'package:ott_share/screen/chatRoomListPage.dart';
 import 'package:ott_share/screen/ottRecommendation.dart';
 import 'package:ott_share/models/loginStorage.dart';
 import 'package:ott_share/screen/myPage.dart';
@@ -19,11 +17,57 @@ import 'package:ott_share/screen/myPage.dart';
 import 'package:http/http.dart' as http;
 
 import 'api/google_signin_api.dart';
-import 'chatting/chatMember.dart';
 import 'chatting/chatRoom.dart';
-import 'chatting/message.dart';
 import 'models/userInfo.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+
+// Future<void> backgroundHandler(RemoteMessage message) async {
+//   debugPrint('fcm backgroundHandler, message');
+//
+//   debugPrint(message.notification?.title ?? '');
+//   debugPrint(message.notification?.body ?? '');
+// }
+
+// Future<void> setFCM() async {
+//
+//   //백그라운드 메세지 핸들링(수신처리)
+//   FirebaseMessaging.onBackgroundMessage(backgroundHandler);
+// }
+//
+// void initializeNotification() async {
+//   final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+//
+//   const AndroidNotificationChannel channel = AndroidNotificationChannel(
+//     'high_importance_channel', // id
+//     'High Importance Notifications', // name
+//     importance: Importance.high,
+//     description: 'This channel is used for important notifications.',
+//   );
+//
+//   await flutterLocalNotificationsPlugin
+//       .resolvePlatformSpecificImplementation<
+//       AndroidFlutterLocalNotificationsPlugin>()
+//       ?.createNotificationChannel(channel);
+//
+//   await flutterLocalNotificationsPlugin.initialize(
+//     const InitializationSettings(
+//       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+//     ),
+//   );
+//
+//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+//
+//   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+//     alert: true,
+//     badge: true,
+//     sound: true,
+//   );
+// }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +75,10 @@ void main() async {
     nativeAppKey: 'b8d545024ec99b8ad44c04b522cab54f',
     javaScriptAppKey: 'a883fcabacb6ce410161d059b4dd1e75',
   );
-  WidgetsFlutterBinding.ensureInitialized(); // 이 줄이 필수적으로 필요할 수 있습니다.
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  // initializeNotification();
   await LoginStorage.init();
   runApp(MyApp());
 }
@@ -40,63 +87,97 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        title: 'OTT 공유 앱',
-        routerConfig: GoRouter(initialLocation: "/", routes: [
-          GoRoute(
-            path: "/",
-            builder: (context, state) => HomePage(),
+      debugShowCheckedModeBanner: false,
+      title: 'OTT 공유 앱',
+      theme: ThemeData(
+        scaffoldBackgroundColor: Colors.white, // 전체 앱의 배경색을 흰색으로 설정
+        inputDecorationTheme: const InputDecorationTheme(
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey),
           ),
-          GoRoute(path: "/signUp", builder: (context, state) => SignUpPage()),
-          GoRoute(
-              path: "/users/login", builder: (context, state) => LoginPage()),
-          GoRoute(path: "/findId", builder: (context, state) => FindIdPage()),
-          GoRoute(
-              path: "/findPassword",
-              builder: (context, state) => FindPasswordPage()),
-          GoRoute(
-              path: "/autoMatching",
-              builder: (context, state) {
-                int selectedIndex =
-                    int.parse(state.uri.queryParameters['selectedIndex']!);
-                return HomePage(selectedIndex: selectedIndex);
-              }),
-          GoRoute(
-              path: "/home",
-              builder: (context, state) {
-                bool isLoggedIn =
-                    bool.parse(state.uri.queryParameters['isLoggedIn']!);
-                UserInfo userInfo = state.extra as UserInfo;
-                return HomePage(isLoggedIn: isLoggedIn, userInfo: userInfo);
-              }),
-          GoRoute(
-              path: "/ottInfo",
-              builder: (context, state) {
-                int selectedOttIndex =
-                    int.parse(state.uri.queryParameters['selectedOttIndex']!);
-                bool isLeader =
-                    bool.parse(state.uri.queryParameters['isLeader']!);
-                UserInfo userInfo = state.extra as UserInfo;
-                return OTTInfoPage(
-                    selectedOttIndex: selectedOttIndex,
-                    isLeader: isLeader,
-                    userInfo: userInfo);
-              }),
-          GoRoute(
-              path: "/chatRoom",
-              builder: (context, state) {
-                ChatRoom chatRoom = state.extra as ChatRoom;
-                return ChatRoomPage(
-                    chatRoom: chatRoom);
-              }),
-        ]),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Color(0xff1C1C1C)),
+          ),
+
+        ),
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: Colors.black54,
+        ),
+        dialogTheme: DialogTheme(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          contentTextStyle: TextStyle(
+            fontSize: 17,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+      routerConfig: GoRouter(initialLocation: "/", routes: [
+        GoRoute(
+          path: "/",
+          builder: (context, state) => HomePage(),
+        ),
+        GoRoute(path: "/signUp", builder: (context, state) => SignUpPage()),
+        GoRoute(path: "/users/login", builder: (context, state) => LoginPage()),
+        GoRoute(
+            path: "/findIdAndPassword",
+            builder: (context, state) {
+              int index = state.extra as int;
+              return FindIdAndPasswordPage(index: index);
+            }),
+        GoRoute(
+            path: "/autoMatching",
+            builder: (context, state) {
+              return HomePage(selectedIndex: 0);
+            }),
+        GoRoute(
+            path: "/home",
+            builder: (context, state) {
+              bool isLoggedIn =
+                  bool.parse(state.uri.queryParameters['isLoggedIn']!);
+              UserInfo userInfo = state.extra as UserInfo;
+              return HomePage(isLoggedIn: isLoggedIn, userInfo: userInfo, selectedIndex: 2,);
+            }),
+        GoRoute(
+            path: "/afterDeleteUser",
+            builder: (context, state) {
+              return HomePage(isLoggedIn: false, selectedIndex: 2, userInfo: null);
+            }),
+        GoRoute(
+            path: "/ottInfo",
+            builder: (context, state) {
+              int selectedOttIndex =
+                  int.parse(state.uri.queryParameters['selectedOttIndex']!);
+              bool isLeader =
+                  bool.parse(state.uri.queryParameters['isLeader']!);
+              UserInfo userInfo = state.extra as UserInfo;
+              return OTTInfoPage(
+                  selectedOttIndex: selectedOttIndex,
+                  isLeader: isLeader,
+                  userInfo: userInfo);
+            }),
+        GoRoute(
+            path: "/chatRoom",
+            builder: (context, state) {
+              ChatRoom chatRoom = state.extra as ChatRoom;
+              return ChatRoomPage(chatRoom: chatRoom);
+            }),
+        GoRoute(
+            path: "/editProfile",
+            builder: (context, state) {
+              UserInfo userInfo = state.extra as UserInfo;
+              return EditProfilePage(userInfo: userInfo);
+            }),
+      ]),
     );
   }
 }
-
 
 class HomePage extends StatefulWidget {
   final UserInfo? userInfo;
@@ -108,40 +189,78 @@ class HomePage extends StatefulWidget {
 
   @override
   State<HomePage> createState() =>
-      _HomePageState(userInfo: userInfo, isLoggedIn: isLoggedIn);
+      _HomePageState(userInfo: userInfo, isLoggedIn: isLoggedIn, selectedIndex: selectedIndex);
 }
 
 class _HomePageState extends State<HomePage> {
   late UserInfo? userInfo;
   late bool? isLoggedIn;
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
-  _HomePageState({this.userInfo, this.isLoggedIn});
+  _HomePageState({this.userInfo, this.isLoggedIn, int? selectedIndex})
+      : _selectedIndex = selectedIndex ?? 0;
+
+
+  // var messageString = "";
+  // void getMyDeviceToken() async {
+  //   final token = await FirebaseMessaging.instance.getToken();
+  //   print("내 디바이스 토큰: $token");
+  // }
+
 
   @override
   void initState() {
+    // getMyDeviceToken();
+    // FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    //   RemoteNotification? notification = message.notification;
+    //
+    //   if (notification != null) {
+    //     FlutterLocalNotificationsPlugin().show(
+    //       notification.hashCode,
+    //       notification.title,
+    //       notification.body,
+    //       const NotificationDetails(
+    //
+    //         android: AndroidNotificationDetails(
+    //           'high_importance_channel',
+    //           'high_importance_notification',
+    //           importance: Importance.max,
+    //         ),
+    //       ),
+    //     );
+    //     setState(() {
+    //       messageString = message.notification!.body!;
+    //       print("Foreground 메시지 수신: $messageString");
+    //     });
+    //   }
+    // });
     super.initState();
     userInfo = widget.userInfo; // null일 수 있음
     isLoggedIn = widget.isLoggedIn ?? false;
+    _selectedIndex = widget.selectedIndex ?? 0;
+
+
   }
 
-  static const TextStyle optionStyle =
-      TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
 
   void _onItemTapped(int index) async {
     // '로그인/로그아웃' 버튼을 탭했을 때의 로직
-    if (index == 3) {
+    if (index == 2) {
       // 로그인/로그아웃 탭 인덱스, 필요에 따라 조정하세요.
       if (isLoggedIn == false) {
         // 로그인 페이지로 이동하고 결과를 기다립니다.
         context.push('/users/login').then((result) {
           // 로그인 페이지에서 반환된 결과를 기반으로 상태를 업데이트합니다.
-          if (result is Map<String, dynamic>) {
-            setState(() {
-              isLoggedIn = bool.parse(result['isLoggedIn']) ?? false;
-              userInfo = result['userInfo'] as UserInfo?;
-            });
-          }
+          setState(() {
+            // _selectedIndex = 0;
+            context.pushReplacement("/autoMatching?selectedIndex=0");
+          });
+          // if (result is Map<String, dynamic>) {
+          //   setState(() {
+          //     isLoggedIn = bool.parse(result['isLoggedIn']) ?? false;
+          //     userInfo = result['userInfo'] as UserInfo?;
+          //   });
+          // }
         });
       } else {
         // 마이페이지 이동 로직
@@ -156,38 +275,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> logout() async {
-    GoogleSignInApi.logout();
-    // UserApi.instance.logout();
-    setState(() {
-      isLoggedIn = false;
-    });
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('로그아웃 성공'),
-          content: Text('로그아웃이 성공적으로 완료되었습니다.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // 다이얼로그 닫기
-                // Navigator.pop(context, {'isLoggedIn': true, 'userInfo': userInfo}); // 로그인 페이지 닫고 성공 여부 반환
-                context.go('/');
-              },
-              child: Text('확인'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   // 메인 위젯
   @override
   Widget build(BuildContext context) {
-
-
     String titleText = '';
 
     switch (_selectedIndex) {
@@ -196,47 +287,52 @@ class _HomePageState extends State<HomePage> {
       case 1:
         titleText = 'OTT 추천';
       case 2:
-        titleText = '채팅방 기록';
-      case 3:
         titleText = '마이페이지';
     }
 
     List<BottomNavigationBarItem> bottomItems = [
       BottomNavigationBarItem(icon: Icon(Icons.share), label: '자동매칭'),
       BottomNavigationBarItem(icon: Icon(Icons.movie_filter), label: 'OTT 추천'),
-      BottomNavigationBarItem(icon: Icon(Icons.chat), label: '채팅방 기록'),
       BottomNavigationBarItem(
           icon: isLoggedIn == true ? Icon(Icons.person) : Icon(Icons.login),
           label: isLoggedIn == true ? '마이페이지' : '로그인'),
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(titleText),
-        backgroundColor: Color(0xffffdf24),
-        centerTitle: true,
-        elevation: 0.0,
-        actions: [
-          if (isLoggedIn == true)
-            IconButton(icon: Icon(Icons.logout), onPressed: logout)
-        ],
-      ),
-      body: SafeArea(
-        child: <Widget>[
-          AutoMatchingPage(userInfo: widget.userInfo),
-          OttRecommendationPage(),
-          ChatRoomListPage(userInfo: widget.userInfo),
-          MyPage(userInfo: widget.userInfo, selectedIndex: 3),
-        ].elementAt(_selectedIndex),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: bottomItems,
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        selectedItemColor: Color(0xffffdf24),
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-      ),
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          title: Text(titleText),
+          backgroundColor: Color(0xffffdf24),
+          elevation: 0,
+          shadowColor: Color(0xffffdf24),
+          surfaceTintColor: Color(0xffffdf24),
+          centerTitle: true,
+        ),
+        body: SafeArea(
+          child: <Widget>[
+            AutoMatchingPage(userInfo: widget.userInfo),
+            OttRecommendationPage(),
+            MyPage(userInfo: widget.userInfo, selectedIndex: 2),
+          ].elementAt(_selectedIndex),
+        ),
+        bottomNavigationBar: Theme(
+          data: ThemeData(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            canvasColor: Colors.white
+          ),
+          child: BottomNavigationBar(
+            items: bottomItems,
+            // elevation: 0,
+            type: BottomNavigationBarType.fixed,
+            currentIndex: _selectedIndex,
+            selectedItemColor: Color(0xffffdf24),
+            unselectedItemColor: Colors.black26,
+            selectedFontSize: 12,
+            unselectedFontSize: 12,
+            onTap: _onItemTapped,
+          ),
+        )
     );
   }
 
