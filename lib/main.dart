@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:ott_share/screen/EditProfilePage.dart';
 import 'package:ott_share/screen/FindIdAndPassword.dart';
@@ -13,6 +14,7 @@ import 'package:ott_share/chatting/chatRoomPage.dart';
 import 'package:ott_share/screen/ottRecommendation.dart';
 import 'package:ott_share/models/loginStorage.dart';
 import 'package:ott_share/screen/myPage.dart';
+import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
 
 import 'package:http/http.dart' as http;
 

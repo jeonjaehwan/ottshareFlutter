@@ -630,6 +630,21 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       ],
                     ),
                   ),
+                  SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Container(
+                          height: 45,
+                          width: 40,
+                          child: Text("계좌번호", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
+                      ),
+                      SizedBox(width: 10),
+                      Container(
+                        width: 50,
+                          child: Text("${leader?.userInfo.account}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
+                      )
+                    ],
+                  ),
                   Divider(),
                   SizedBox(height: 30),
                   Container(
