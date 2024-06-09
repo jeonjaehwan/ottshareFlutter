@@ -458,8 +458,8 @@ class _FindIdAndPasswordPageState extends State<FindIdAndPasswordPage>
           unselectedLabelStyle: const TextStyle(
             fontSize: 15,
           ),
-          overlayColor: WidgetStateColor.transparent,
-          indicatorColor: Colors.black,
+          overlayColor: MaterialStateProperty.all<Color>(Colors.transparent),
+    indicatorColor: Colors.black,
           indicatorWeight: 2,
           indicatorSize: TabBarIndicatorSize.tab,
           onTap: (index) {
