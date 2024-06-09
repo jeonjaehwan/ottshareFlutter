@@ -3,6 +3,8 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  firebase_core
+  network_info_plus
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

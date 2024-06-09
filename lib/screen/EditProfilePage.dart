@@ -1,79 +1,79 @@
+import 'dart:convert';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
 import '../models/bankType.dart';
 import '../models/localhost.dart';
+import '../models/userInfo.dart';
+import 'package:http/http.dart' as http;
 
 
-class SignUpPage extends StatefulWidget {
+
+class EditProfilePage extends StatefulWidget {
+  final UserInfo? userInfo;
+
+  const EditProfilePage({Key? key, required this.userInfo})
+      : super(key: key);
+
   @override
-  _SignupPageState createState() => _SignupPageState();
+  State<EditProfilePage> createState() => _EditProfilePageState();
 }
 
-class _SignupPageState extends State<SignUpPage> {
+class _EditProfilePageState extends State<EditProfilePage> {
+  late UserInfo? userInfo;
 
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _usernameController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
-  TextEditingController _nicknameController = TextEditingController();
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _phoneNumberController = TextEditingController();
-  TextEditingController _accountController = TextEditingController();
-  TextEditingController _accountHolderController = TextEditingController();
-  BankType? _selectedBank;
-
+  late TextEditingController _nameController;
+  late TextEditingController _usernameController;
+  late TextEditingController _passwordController;
+  late TextEditingController _nicknameController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneNumberController;
+  late TextEditingController _accountController;
+  late TextEditingController _accountHolderController;
+  late BankType? _selectedBank;
 
   @override
   void initState() {
     super.initState();
+    userInfo = widget.userInfo;
+    _nameController = TextEditingController(text: userInfo?.name ?? '');
+    _usernameController = TextEditingController(text: userInfo?.username ?? '');
+    _passwordController = TextEditingController();
+    _nicknameController = TextEditingController(text: userInfo?.nickname ?? '');
+    _emailController = TextEditingController(text: userInfo?.email ?? '');
+    _phoneNumberController = TextEditingController(text: userInfo?.phoneNumber ?? '');
+    _accountController = TextEditingController(text: userInfo?.account ?? '');
+    _accountHolderController = TextEditingController(text: userInfo?.accountHolder ?? '');
+    _selectedBank = userInfo?.bank;
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _nicknameController.dispose();
-    _emailController.dispose();
-    _phoneNumberController.dispose();
-    _accountController.dispose();
-    _accountHolderController.dispose();
-    super.dispose();
-  }
+  Future<void> editUser(BuildContext context) async {
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/${userInfo?.userId}';
 
-
-  Future<void> _registerUser(BuildContext context) async {
-    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/join';
-
-    String name = _nameController.text;
     String username = _usernameController.text;
     String password = _passwordController.text;
     String nickname = _nicknameController.text;
-    String email = _emailController.text;
-    String phoneNumber = _phoneNumberController.text;
     String account = _accountController.text;
     String accountHolder = _accountHolderController.text;
     String bank = _selectedBank?.toString().split('.').last ?? '';
 
-    Map<String, String> data = {
-      'name': name,
+
+    Map<String, dynamic> data = {
+      'id' : userInfo?.userId,
       'username': username,
       'password': password,
       'nickname': nickname,
-      'email': email,
-      'phoneNumber': phoneNumber,
       'account': account,
       'accountHolder': accountHolder,
       'bank' : bank,
-      'role' : 'USER'
     };
 
+    print("수정 정보");
     print(jsonEncode(data));
 
     try {
-      final response = await http.post(
+      final response = await http.patch(
         Uri.parse(apiUrl),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
@@ -83,13 +83,12 @@ class _SignupPageState extends State<SignUpPage> {
 
       print("response.statusCode = ${response.statusCode}");
       if (response.statusCode == 200) {
-        // 회원가입 성공
         context.pop();
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              content: Text('회원가입이 완료되었습니다.'),
+              content: Text('프로필이 수정되었습니다.'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -114,12 +113,11 @@ class _SignupPageState extends State<SignUpPage> {
           },
         );
       } else {
-        // 회원가입 실패
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('회원가입이 실패하였습니다.'),
+              content: Text('프로필 수정이 실패하였습니다.'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -150,7 +148,7 @@ class _SignupPageState extends State<SignUpPage> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            content: Text('회원가입 중 오류가 발생했습니다.'),
+            content: Text('프로필 수정 중 오류가 발생했습니다.'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -181,7 +179,7 @@ class _SignupPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("회원가입", style: TextStyle(fontSize: 19),),
+        title: Text("프로필 수정", style: TextStyle(fontSize: 19),),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -206,6 +204,8 @@ class _SignupPageState extends State<SignUpPage> {
               ),
               TextField(
                 controller: _nameController,
+                readOnly: true,
+                style: TextStyle(color: Colors.grey),
                 decoration: InputDecoration(
                     hintText: '이름 입력',
                     hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
@@ -243,6 +243,8 @@ class _SignupPageState extends State<SignUpPage> {
               SizedBox(height: 20.0),
               TextField(
                 controller: _emailController,
+                readOnly: true,
+                style: TextStyle(color: Colors.grey),
                 decoration: InputDecoration(
                     hintText: '이메일 입력',
                     hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
@@ -252,6 +254,8 @@ class _SignupPageState extends State<SignUpPage> {
               SizedBox(height: 20.0),
               TextField(
                 controller: _phoneNumberController,
+                readOnly: true,
+                style: TextStyle(color: Colors.grey),
                 decoration: InputDecoration(
                     hintText: '휴대폰번호 입력',
                     hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
@@ -284,34 +288,34 @@ class _SignupPageState extends State<SignUpPage> {
               ButtonTheme(
                 alignedDropdown: false,
                 child: DropdownButtonFormField<BankType>(
-                value: _selectedBank,
-                onChanged: (newValue) {
-                  setState(() {
-                    _selectedBank = newValue;
-                  });
-                },
-                dropdownColor: Colors.white,
-                items: BankType.values.map((bank) {
-                  return DropdownMenuItem<BankType>(
-                    value: bank,
-                    child: Text(
-                      bank.toString().split('.').last,
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  );
-                }).toList(),
+                  value: _selectedBank,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedBank = newValue;
+                    });
+                  },
+                  dropdownColor: Colors.white,
+                  items: BankType.values.map((bank) {
+                    return DropdownMenuItem<BankType>(
+                      value: bank,
+                      child: Text(
+                        bank.toString().split('.').last,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    );
+                  }).toList(),
                   isDense: true,
-                decoration: InputDecoration(
-                  hintText: '은행 선택',
-                  hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
-                  contentPadding: EdgeInsets.all(7),
-                ),
-                icon: Icon(Icons.arrow_drop_down_rounded, color: Colors.grey),
-                style: TextStyle(color: Colors.black, fontSize: 16),
-              ),),
+                  decoration: InputDecoration(
+                    hintText: '은행 선택',
+                    hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
+                    contentPadding: EdgeInsets.all(7),
+                  ),
+                  icon: Icon(Icons.arrow_drop_down_rounded, color: Colors.grey),
+                  style: TextStyle(color: Colors.black, fontSize: 16),
+                ),),
               SizedBox(height: 30.0),
               ElevatedButton(
-                onPressed: () => _registerUser(context),
+                onPressed: () => editUser(context),
                 style: ElevatedButton.styleFrom(
                   fixedSize: Size(MediaQuery.of(context).size.width * 0.33,50),
                   foregroundColor: Color(0xff1C1C1C),
@@ -323,12 +327,25 @@ class _SignupPageState extends State<SignUpPage> {
                   elevation: 0,
                   padding: EdgeInsets.zero,
                 ),
-                child: Text('회원가입', style: TextStyle(fontSize: 17),),
+                child: Text('수정', style: TextStyle(fontSize: 17),),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _nicknameController.dispose();
+    _emailController.dispose();
+    _phoneNumberController.dispose();
+    _accountController.dispose();
+    _accountHolderController.dispose();
+    super.dispose();
   }
 }

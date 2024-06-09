@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:ott_share/models/userInfo.dart';
 
 import '../chatting/chatRoom.dart';
+import '../models/localhost.dart';
 import '../models/loginStorage.dart';
 
 class AutoMatchingPage extends StatefulWidget {
@@ -17,19 +18,20 @@ class AutoMatchingPage extends StatefulWidget {
 }
 
 class _AutoMatchingPageState extends State<AutoMatchingPage> {
+
   late UserInfo? userInfo;
   int? selectedOttIndex; // 선택된 OTT의 인덱스를 추적하는 변수
   bool? isLeader; // 방장이 선택되었는지 여부를 나타내는 상태
   bool? isShareRoom = false;
   bool isStartMatching = false;
-
-
+  late int waitingUserid= 0;
 
   @override
   void initState() {
     super.initState();
     userInfo = widget.userInfo;
     isShareRoom = widget.userInfo?.isShareRoom;
+
 
     if (userInfo != null) {
       print('user info = ${widget.userInfo}');
@@ -42,26 +44,42 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     }
   }
 
-  Future<bool> getIsStartMatching() async {
 
-    late bool isStartMatching;
-
+  Future<UserInfo?> getUserInfo() async {
     int? id = await LoginStorage.getUserId();
 
     // waitingUser에 해당 user가 있는지 확인
     final response = await http.get(
-      Uri.parse('http://localhost:8080/api/waitingUser/${id}'),
+      Uri.parse('http://${Localhost.ip}:8080/api/users/${id}/modification'),
       headers: {"Content-Type": "application/json"},
     );
-    isStartMatching = response.body.toLowerCase() == 'true';
 
     if (response.statusCode == 200) {
-      isStartMatching = jsonDecode(response.body);
-
+      UserInfo userInfo = UserInfo.fromJson(jsonDecode(response.body));
+      return userInfo;
+    } else {
+      print("userInfo 가져오기 실패");
+      return null;
     }
+  }
 
-    return isStartMatching;
 
+  Future<bool> getIsStartMatching() async {
+    int? id = await LoginStorage.getUserId();
+
+    // waitingUser에 해당 user가 있는지 확인
+    final response = await http.get(
+      Uri.parse('http://${Localhost.ip}:8080/api/waitingUser/${id}'),
+      // headers: {"Content-Type": "application/json"},
+    );
+
+    print(response.body.toString());
+    if (int.parse(response.body) == 0) {
+      return false;
+    } else {
+      waitingUserid = int.parse(response.body);
+      return true;
+    }
   }
 
   // 멤버인 경우, 바로 자동매칭 요청 보냄.
@@ -94,7 +112,6 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       'isLeader': isLeader,
     };
 
-
     if (userInfo != null) {
       requestMap['userInfo'] = userInfo!.toJson();
     }
@@ -102,8 +119,9 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     var body = jsonEncode(requestMap);
 
     final response = await http.post(
-      Uri.parse('http://localhost:8080/api/waitingUser/save'),
+      Uri.parse('http://${Localhost.ip}:8080/api/waitingUser/save'),
       headers: {"Content-Type": "application/json"},
+      body: body,
     );
 
     if (response.statusCode == 200) {
@@ -111,28 +129,46 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('자동매칭 시작'),
-            content: Text('잠시만 기다려주세요!'),
+            content: Text('자동매칭이 시작되었습니다.\n잠시만 기다려주세요!'),
             actions: [
               TextButton(
                 onPressed: () {
                   context.pop();
+                  getUserInfo().then((value) {
+                    setState(() {
+                      userInfo = value;
+                      isShareRoom = userInfo?.isShareRoom;
+                      print("userinfo value = ${value}");
+                    });
+                  });
+                  getIsStartMatching();
                 },
-                child: Text('확인'),
+                child: Align(
+                  alignment:
+                  Alignment.center, // 텍스트를 가운데 정렬
+                  child: Text('확인'),
+                ),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: Color(0xffffdf24),
+                  foregroundColor: Colors.black,
+                ),
               ),
             ],
           );
         },
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('자동매칭 실패')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('자동매칭 실패')));
       return;
     }
   }
 
   Future<void> navigateToChatRoom() async {
-
     if (userInfo == null || userInfo!.userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('User information is incomplete.')));
@@ -140,18 +176,15 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     }
 
     try {
-      var url =
-      Uri.parse('http://localhost:8080/api/ottShareRoom/${userInfo!.userId}');
-      var response = await http.get(url, headers: {"Content-Type": "application/json"});
-      Map<String,dynamic> json = jsonDecode(response.body);
+      var url = Uri.parse(
+          'http://${Localhost.ip}:8080/api/ottShareRoom/${userInfo!.userId}');
+      var response =
+          await http.get(url, headers: {"Content-Type": "application/json"});
+      Map<String, dynamic> json = jsonDecode(response.body);
 
-      print("automatchingjson = ${json}");
       ChatRoom chatRoom = ChatRoom.fromJson(json, userInfo!);
-      print("chatRoom의 USERINFO${userInfo?.userId}");
-      print("chatRoom의 USERINFO${chatRoom.writer.userInfo.userId}");
 
       context.push("/chatRoom", extra: chatRoom);
-
     } catch (e) {
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -162,42 +195,115 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   Widget ottBox(String assetName, String label, int index) {
     bool isSelected = selectedOttIndex == index;
     return ElevatedButton(
-        onPressed: () => _onOttTapped(index),
+        onPressed: () {
+          if (isShareRoom == true) {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  content: Text("이미 자동매칭된 OTT가 있습니다."),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () {
+                        context.pop(); // 다이얼로그 닫기
+
+                      },
+                      child: Align(
+                        alignment:
+                        Alignment.center, // 텍스트를 가운데 정렬
+                        child: Text('확인'),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        backgroundColor: Color(0xffffdf24),
+                        foregroundColor: Colors.black,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          } else {
+            _onOttTapped(index);
+          }
+        },
         style: ElevatedButton.styleFrom(
           elevation: 0,
+          disabledBackgroundColor: Colors.white,
           backgroundColor: isSelected ? Color(0xffffdf24) : Colors.white,
-          foregroundColor: isSelected ? Colors.white : Colors.black,
+          foregroundColor: isSelected ? Colors.white : Color(0xff1C1C1C),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
               side: BorderSide(color: Color(0xffffdf24), width: 2)),
         ),
         child: Container(
-            height: 140,
-            width: 60,
-            child: Column(mainAxisSize: MainAxisSize.max, children: <Widget>[
-              Container(
-                height: 70,
-                child: Image.asset(assetName, width: 50, height: 50),
-              ),
-              Text(label),
-            ]))
-        );
+            alignment: Alignment.center,
+            height: 120,
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.center, // 수직 방향 가운데 정렬
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.max,
+                children: <Widget>[
+                  Container(
+                    height: 50,
+                    child: Image.asset(assetName, width: 60, height: 60),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    label,
+                    style: TextStyle(fontSize: 15),
+                  ),
+                ])));
   }
 
   ElevatedButton roleButton(String label, bool selected, bool leader) {
     return ElevatedButton(
       onPressed: () {
-        setState(() {
-          isLeader = leader;
-        });
+        if (isShareRoom == true) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                content: Text("이미 자동매칭된 OTT가 있습니다."),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () {
+                      context.pop(); // 다이얼로그 닫기
+                    },
+                    child: Align(
+                      alignment:
+                      Alignment.center, // 텍스트를 가운데 정렬
+                      child: Text('확인'),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Color(0xffffdf24),
+                      foregroundColor: Colors.black,
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          setState(() {
+            isLeader = leader;
+          });
+        }
+
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: selected ? Color(0xffffdf24) : Colors.white,
-        foregroundColor: selected ? Colors.white : Colors.black,
+          backgroundColor: selected ? Color(0xffffdf24) : Colors.white,
+          foregroundColor: selected ? Colors.white : Color(0xff1C1C1C),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
-              side: BorderSide(color: Color(0xffffdf24), width: 2))
-      ),
+              side: BorderSide(color: Color(0xffffdf24), width: 2))),
       child: Container(
         height: 70,
         alignment: Alignment.center,
@@ -230,16 +336,35 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('로그인 해주세요.')));
     } else if (selectedOttIndex != null && isLeader != null) {
-      if (isLeader!) {
-        context.push("/ottInfo?selectedOttIndex=$selectedOttIndex&isLeader=$isLeader", extra: userInfo).then((result) {
-          if (result is Map<String, dynamic>) {
+      if (isLeader! == true) {
+        context.push(
+                "/ottInfo?selectedOttIndex=$selectedOttIndex&isLeader=$isLeader",
+                extra: userInfo)
+            .then((result) {
+          setState(() {
+            selectedOttIndex = null;
+            isLeader = null;
+            isStartMatching = true;
+          });
+          getUserInfo().then((value) {
             setState(() {
-              isStartMatching = bool.parse(result['isStartMatching']);
+              userInfo = value;
+              isShareRoom = userInfo?.isShareRoom;
+              print("userinfo value = ${value}");
             });
-          }
-        });
+          });
+        }
+      )
+    ;
       } else {
-        sendAutoMatchingRequest();
+        sendAutoMatchingRequest()
+        .then((result) {
+          setState(() {
+            selectedOttIndex = null;
+            isLeader = null;
+            isStartMatching = true;
+          });
+        });
       }
     } else {
       ScaffoldMessenger.of(context)
@@ -247,20 +372,48 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     }
   }
 
-
   void noticeAutoMatchingProgress() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('자동매칭 진행 중'),
-          content: Text('잠시만 기다려주세요!'),
+          content: Text('팀원을 모으고 있습니다.\n정말 취소하시겠습니까?'),
           actions: [
+            TextButton(
+              onPressed: () {
+                cancelAutoMatching(context);
+              },
+              child: Align(
+                alignment:
+                Alignment.center, // 텍스트를 가운데 정렬
+                child: Text('확인'),
+              ),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                backgroundColor: Color(0xffffdf24),
+                foregroundColor: Colors.black,
+              ),
+            ),
             TextButton(
               onPressed: () {
                 context.pop();
               },
-              child: Text('확인'),
+              child: Align(
+                alignment:
+                Alignment.center, // 텍스트를 가운데 정렬
+                child: Text('취소'),
+              ),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                backgroundColor: Color(0xffE6E6E6),
+                foregroundColor: Colors.black,
+              ),
             ),
           ],
         );
@@ -268,16 +421,42 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     );
   }
 
+  Future<void> cancelAutoMatching(BuildContext context) async {
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/waitingUser/matchings/${waitingUserid}';
+
+    final response = await http.delete(
+      Uri.parse(apiUrl),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+
+    print("response.statusCode = ${response.statusCode}");
+    print("response.body = ${response.body}");
+
+
+    if (response.statusCode == 200) {
+      setState(() {
+        isStartMatching = false;
+      });
+      print("자동 매칭 취소 완료");
+      context.pop();
+
+    } else {
+      print("자동 매칭 취소 오류");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     String subscriptionText = _calculateSubscription();
     bool hasSelectedService = selectedOttIndex != null;
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),
+        padding: EdgeInsets.symmetric(horizontal: 20.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Align(
                 alignment: Alignment.centerLeft,
@@ -285,23 +464,28 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
                     style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black))),
+                        color: Color(0xff1C1C1C)))),
             SizedBox(height: 10),
-            Row(mainAxisAlignment: MainAxisAlignment.start, children: <Widget>[
-              ottBox('assets/netflix_logo.png', '넷플릭스', 0),
-              SizedBox(width: 20),
-              ottBox('assets/tving_logo.png', '티빙', 1),
-              SizedBox(width: 20),
-              ottBox('assets/wavve_logo.png', '웨이브', 2),
-            ]),
-            SizedBox(height: 50),
+            Align(
+              alignment: Alignment.center,
+              child: Row(
+                // mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(child: ottBox('assets/netflix_logo.png', '넷플릭스', 0)),
+                    SizedBox(width: 10),
+                    Expanded(child: ottBox('assets/tving_logo.png', '티빙', 1)),
+                    SizedBox(width: 10),
+                    Expanded(child: ottBox('assets/wavve_logo.png', '웨이브', 2)),
+                  ]),
+            ),
+            SizedBox(height: 25),
             Align(
                 alignment: Alignment.centerLeft,
                 child: Text('역할',
                     style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black))),
+                        color: Color(0xff1C1C1C)))),
             SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -316,7 +500,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
                         child: roleButton('멤버', isLeader == false, false))),
               ],
             ),
-            SizedBox(height: 50),
+            SizedBox(height: 35),
             if (hasSelectedService)
               Container(
                 height: 110,
@@ -334,15 +518,18 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
                         style: TextStyle(
                             fontSize: 21,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black)),
+                            color: Color(0xff1C1C1C))),
                     Text(subscriptionText,
-                        style: TextStyle(fontSize: 25, color: Color(0xffffdf24), fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            fontSize: 25,
+                            color: Color(0xffffdf24),
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
             if (!hasSelectedService)
               Container(
-                height: 100,
+                height: 110,
                 width: double.infinity,
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -355,27 +542,31 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
                       style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black)),
+                          color: Color(0xff1C1C1C))),
                 ),
               ),
-            SizedBox(height: 60),
+            SizedBox(height: 25),
             ElevatedButton(
-              onPressed: isShareRoom == true ? navigateToChatRoom : (isStartMatching == true ? noticeAutoMatchingProgress : _handleAutoMatching),
+              onPressed: isShareRoom == true
+                  ? navigateToChatRoom
+                  : (isStartMatching == true
+                  ? noticeAutoMatchingProgress
+                  : _handleAutoMatching),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xffffdf24),
-                foregroundColor: Colors.black,
                 minimumSize: Size(double.infinity, 60),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
-              child: Text(isShareRoom == true ? '채팅방 이동' : (isStartMatching == true ? '자동매칭 진행 중' : '자동매칭'),
-                  style: TextStyle(fontSize: 26)),
+              child: Text(
+                  isShareRoom == true
+                      ? '채팅방 이동'
+                      : (isStartMatching == true ? '자동매칭 취소' : '자동매칭'),
+                  style: TextStyle(fontSize: 26, color: Color(0xff1C1C1C))),
             ),
           ],
         ),
       ),
     );
   }
-
-
 }
