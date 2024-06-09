@@ -11,6 +11,8 @@ import '../models/loginStorage.dart';
 
 import '../api/google_signin_api.dart';
 import '../models/userInfo.dart';
+import 'package:kakao_flutter_sdk_user/src/model/account.dart';
+
 
 class LoginPage extends StatefulWidget {
   @override
@@ -383,43 +385,80 @@ class _LoginPageState extends State<LoginPage> {
         await UserApi.instance.loginWithKakaoTalk().then((value) async {
 
           // 회원 정보 추출
-          User user = await UserApi.instance.me();
+          User kakaoUser = await UserApi.instance.me();
           print('카카오 사용자 정보 요청 성공'
-              '\n회원번호: ${user.id}'
-              '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
-              '\n이메일: ${user.kakaoAccount?.email}');
+              '\n회원번호: ${kakaoUser.id}'
+              '\n닉네임: ${kakaoUser.kakaoAccount?.profile?.nickname}'
+              '\n이메일: ${kakaoUser.kakaoAccount?.email}');
+
+          UserInfo userInfo = UserInfo(
+              userId: 0,
+              username: kakaoUser.id.toString(),
+              nickname: kakaoUser.kakaoAccount?.profile?.nickname ?? '',
+              email: kakaoUser.kakaoAccount?.email ?? '',
+              name: kakaoUser.kakaoAccount?.profile?.nickname ?? '',
+              password: "",
+              phoneNumber: "",
+              bank: BankType.etc,
+              account: "",
+              accountHolder: "", role: "SOCIAL",
+              isShareRoom: false);
+
+          try {
+            final response = await http.post(
+              Uri.parse('http://${Localhost.ip}:8080/api/users/kakao-login'),
+              headers: <String, String>{
+                'Content-Type': 'application/json; charset=UTF-8',
+              },
+              body: jsonEncode(userInfo),
+            );
+
+            print("response.statusCode=${response.statusCode}");
+            print("response.body=${response.body}");
 
 
-          // 메인페이지로 이동
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                content: Text('로그인이 성공적으로 완료되었습니다.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      context.pop(); // 다이얼로그 닫기
-                      context.go("/home?selectedIndex=0&isLoggedIn=true");
-                    },
-                    child: Align(
-                      alignment:
-                      Alignment.center, // 텍스트를 가운데 정렬
-                      child: Text('확인'),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            if (response.statusCode == 200) {
+              final userInfoJson = jsonDecode(response.body);
+              UserInfo userInfo = UserInfo.fromJson(userInfoJson);
+
+              await LoginStorage.saveUserId(userInfo.userId); // 로그인 성공 시 사용자 ID 저장
+
+              context.go("/home?isLoggedIn=true", extra: userInfo);
+
+            } else {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    content: Text('서버 오류 발생'),
+                    actionsAlignment: MainAxisAlignment.center,
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Align(
+                          alignment:
+                          Alignment.center, // 텍스트를 가운데 정렬
+                          child: Text('확인'),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          backgroundColor: Color(0xffffdf24),
+                          foregroundColor: Colors.black,
+                        ),
                       ),
-                      backgroundColor: Color(0xffffdf24),
-                      foregroundColor: Colors.black,
-                    ),
-                  ),
-                ],
+                    ],
+                  );
+                },
               );
-            },
-          );
+            }
+          } catch (error) {
+            print(error);
+          }
         });
       } catch (error) {
         print('카카오톡으로 로그인 실패1 $error');
@@ -432,44 +471,83 @@ class _LoginPageState extends State<LoginPage> {
         // 카카오톡에 연결된 카카오계정이 없는 경우, 카카오계정으로 로그인
         try {
           await UserApi.instance.loginWithKakaoAccount().then((value) async {
-
-            User user = await UserApi.instance.me();
+            User kakaoUser = await UserApi.instance.me();
             print('카카오 사용자 정보 요청 성공'
-                '\n회원번호: ${user.id}'
-                '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
-                '\n이메일: ${user.kakaoAccount?.email}');
+                '\n회원번호: ${kakaoUser.id}'
+                '\n닉네임: ${kakaoUser.kakaoAccount?.profile?.nickname}'
+                '\n이메일: ${kakaoUser.kakaoAccount?.email}');
 
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Text('로그인 성공'),
-                  content: Text('로그인이 성공적으로 완료되었습니다.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        context.pop(); // 다이얼로그 닫기
-                        context.go("/home?selectedIndex=0&isLoggedIn=true");
-                      },
-                      child: Align(
-                        alignment:
-                        Alignment.center, // 텍스트를 가운데 정렬
-                        child: Text('확인'),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+            UserInfo userInfo = UserInfo(
+                userId: 0,
+                username: kakaoUser.id.toString(),
+                nickname: kakaoUser.kakaoAccount?.profile?.nickname ?? '',
+                email: kakaoUser.kakaoAccount?.email ?? '',
+                name: kakaoUser.kakaoAccount?.profile?.nickname ?? '',
+                password: "",
+                phoneNumber: "",
+                bank: BankType.etc,
+                account: "",
+                accountHolder: "", role: "SOCIAL",
+                isShareRoom: false);
+
+            try {
+              final response = await http.post(
+                Uri.parse('http://${Localhost.ip}:8080/api/users/kakao-login'),
+                headers: <String, String>{
+                  'Content-Type': 'application/json; charset=UTF-8',
+                },
+                body: jsonEncode(userInfo),
+              );
+
+              print("카카오톡 response.statusCode=${response.statusCode}");
+              print("response.body=${response.body}");
+
+
+              if (response.statusCode == 200) {
+                final userInfoJson = jsonDecode(response.body);
+                UserInfo userInfo = UserInfo.fromJson(userInfoJson);
+
+                await LoginStorage.saveUserId(userInfo.userId); // 로그인 성공 시 사용자 ID 저장
+
+                context.go("/home?isLoggedIn=true", extra: userInfo);
+
+              } else {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      content: Text('서버 오류 발생'),
+                      actionsAlignment: MainAxisAlignment.center,
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Align(
+                            alignment:
+                            Alignment.center, // 텍스트를 가운데 정렬
+                            child: Text('확인'),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            backgroundColor: Color(0xffffdf24),
+                            foregroundColor: Colors.black,
+                          ),
                         ),
-                        backgroundColor: Color(0xffffdf24),
-                        foregroundColor: Colors.black,
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 );
-              },
-            );
-          });
+              }
+            } catch (error) {
+              print(error);
+            }
+
+          }
+          );
         } catch (error) {
           print('카카오계정으로 로그인 실패2 $error');
         }
@@ -478,42 +556,77 @@ class _LoginPageState extends State<LoginPage> {
       try {
         await UserApi.instance.loginWithKakaoAccount().then((value) async {
 
-          User user = await UserApi.instance.me();
+          User kakaoUser = await UserApi.instance.me();
           print('카카오 사용자 정보 요청 성공'
-              '\n회원번호: ${user.id}'
-              '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
-              '\n이메일: ${user.kakaoAccount?.email}');
+              '\n회원번호: ${kakaoUser.id}'
+              '\n닉네임: ${kakaoUser.kakaoAccount?.profile?.nickname}'
+              '\n이메일: ${kakaoUser.kakaoAccount?.email}');
 
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('로그인 성공'),
-                content: Text('로그인이 성공적으로 완료되었습니다.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      context.pop(); // 다이얼로그 닫기
-                      context.go("/home?selectedIndex=0&isLoggedIn=true");
-                    },
-                    child: Align(
-                      alignment:
-                      Alignment.center, // 텍스트를 가운데 정렬
-                      child: Text('확인'),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+          UserInfo userInfo = UserInfo(
+              userId: 0,
+              username: kakaoUser.id.toString(),
+              nickname: kakaoUser.kakaoAccount?.profile?.nickname ?? '',
+              email: kakaoUser.kakaoAccount?.email ?? '',
+              name: kakaoUser.kakaoAccount?.profile?.nickname ?? '',
+              password: "",
+              phoneNumber: "",
+              bank: BankType.etc,
+              account: "",
+              accountHolder: "", role: "SOCIAL",
+              isShareRoom: false);
+
+          try {
+            final response = await http.post(
+              Uri.parse('http://${Localhost.ip}:8080/api/users/kakao-login'),
+              headers: <String, String>{
+                'Content-Type': 'application/json; charset=UTF-8',
+              },
+              body: jsonEncode(userInfo),
+            );
+
+
+            if (response.statusCode == 200) {
+              final userInfoJson = jsonDecode(response.body);
+              UserInfo userInfo = UserInfo.fromJson(userInfoJson);
+
+              await LoginStorage.saveUserId(userInfo.userId); // 로그인 성공 시 사용자 ID 저장
+
+              context.go("/home?isLoggedIn=true", extra: userInfo);
+
+            } else {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    content: Text('서버 오류 발생'),
+                    actionsAlignment: MainAxisAlignment.center,
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Align(
+                          alignment:
+                          Alignment.center, // 텍스트를 가운데 정렬
+                          child: Text('확인'),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          backgroundColor: Color(0xffffdf24),
+                          foregroundColor: Colors.black,
+                        ),
                       ),
-                      backgroundColor: Color(0xffffdf24),
-                      foregroundColor: Colors.black,
-                    ),
-                  ),
-                ],
+                    ],
+                  );
+                },
               );
-            },
-          );
+            }
+          } catch (error) {
+            print(error);
+          }
         });
       } catch (error) {
         print('카카오계정으로 로그인 실패3 $error');
