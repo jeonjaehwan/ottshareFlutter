@@ -140,28 +140,47 @@ class _MyPageState extends State<MyPage> {
 
   Future<void> logout() async {
 
-    final loggedIn = await isGoogleLoggedIn();
+    GoogleSignInApi.logout();
 
-    if (loggedIn) {
-      GoogleSignInApi.logout();
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/logout';
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print("로그아웃 성공");
+      // context.go("/home?isLoggedIn=true", extra: userInfo);
+
     } else {
-      final String apiUrl = 'http://${Localhost.ip}:8080/api/users/logout';
-
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        print("로그아웃 성공");
-        // context.go("/home?isLoggedIn=true", extra: userInfo);
-
-      } else {
-        print("로그아웃 실패");
-      }
+      print("로그아웃 실패");
     }
+
+    // final loggedIn = await isGoogleLoggedIn();
+    //
+    // if (loggedIn) {
+    //   GoogleSignInApi.logout();
+    // } else {
+    //   final String apiUrl = 'http://${Localhost.ip}:8080/api/users/logout';
+    //
+    //   final response = await http.post(
+    //     Uri.parse(apiUrl),
+    //     headers: <String, String>{
+    //       'Content-Type': 'application/json; charset=UTF-8',
+    //     },
+    //   );
+    //
+    //   if (response.statusCode == 200) {
+    //     print("로그아웃 성공");
+    //     // context.go("/home?isLoggedIn=true", extra: userInfo);
+    //
+    //   } else {
+    //     print("로그아웃 실패");
+    //   }
+    // }
 
     showDialog(
       context: context,
