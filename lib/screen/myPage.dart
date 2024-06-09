@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import '../api/google_signin_api.dart';
 import '../models/localhost.dart';
 import '../models/userInfo.dart';
@@ -140,47 +141,50 @@ class _MyPageState extends State<MyPage> {
 
   Future<void> logout() async {
 
-    GoogleSignInApi.logout();
-
-    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/logout';
-
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      print("로그아웃 성공");
-      // context.go("/home?isLoggedIn=true", extra: userInfo);
-
-    } else {
-      print("로그아웃 실패");
-    }
-
-    // final loggedIn = await isGoogleLoggedIn();
+    // GoogleSignInApi.logout();
     //
-    // if (loggedIn) {
-    //   GoogleSignInApi.logout();
+    // final String apiUrl = 'http://${Localhost.ip}:8080/api/users/logout';
+    //
+    // final response = await http.post(
+    //   Uri.parse(apiUrl),
+    //   headers: <String, String>{
+    //     'Content-Type': 'application/json; charset=UTF-8',
+    //   },
+    // );
+    //
+    // if (response.statusCode == 200) {
+    //   print("로그아웃 성공");
+    //   // context.go("/home?isLoggedIn=true", extra: userInfo);
+    //
     // } else {
-    //   final String apiUrl = 'http://${Localhost.ip}:8080/api/users/logout';
-    //
-    //   final response = await http.post(
-    //     Uri.parse(apiUrl),
-    //     headers: <String, String>{
-    //       'Content-Type': 'application/json; charset=UTF-8',
-    //     },
-    //   );
-    //
-    //   if (response.statusCode == 200) {
-    //     print("로그아웃 성공");
-    //     // context.go("/home?isLoggedIn=true", extra: userInfo);
-    //
-    //   } else {
-    //     print("로그아웃 실패");
-    //   }
+    //   print("로그아웃 실패");
     // }
+
+    final googleLoggedIn = await isGoogleLoggedIn();
+    final kakaoLoggedIn = await isKakaoLoggedIn();
+
+    if (googleLoggedIn) {
+      GoogleSignInApi.logout();
+    } else if (kakaoLoggedIn) {
+      UserApi.instance.logout();
+    } else {
+      final String apiUrl = 'http://${Localhost.ip}:8080/api/users/logout';
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print("로그아웃 성공");
+        // context.go("/home?isLoggedIn=true", extra: userInfo);
+
+      } else {
+        print("로그아웃 실패");
+      }
+    }
 
     showDialog(
       context: context,
@@ -217,6 +221,18 @@ class _MyPageState extends State<MyPage> {
     final value = await _googleSignIn.isSignedIn();
     print("_googleSignIn.isSignedIn = ${value}");
     return value;
+  }
+
+  Future<bool> isKakaoLoggedIn() async {
+    try {
+      User user = await UserApi.instance.me();
+      if (user != null) {
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+
   }
 
   void _withdraw() {

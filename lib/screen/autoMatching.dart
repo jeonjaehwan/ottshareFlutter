@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:ott_share/models/leaderAndOttType.dart';
 import 'package:ott_share/models/userInfo.dart';
 
 import '../chatting/chatRoom.dart';
@@ -35,12 +36,33 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
     if (userInfo != null) {
       print('user info = ${widget.userInfo}');
-      // 자동매칭 진행 중인지 확인
-      getIsStartMatching().then((value) {
-        setState(() {
-          isStartMatching = value;
+      // sharing룸이 있으면 ott랑 역할 가져와야 함.
+      if (isShareRoom == true) {
+        getOttAndRole("sharingUser").then((value) {
+          InfoOfLeaderAndOtt? info = value;
+          setState(() {
+            isLeader = info?.isLeader;
+            selectedOttIndex = info?.selectedOtt;
+          });
         });
-      });
+      } else {
+        // 자동매칭 진행 중인지 확인
+        getIsStartMatching().then((value) {
+          setState(() {
+            isStartMatching = value;
+            if (value == true) {
+              // 서버에서 ott랑 역할 가져와야 함.
+              getOttAndRole("waitingUser").then((value) {
+                InfoOfLeaderAndOtt? info = value;
+                setState(() {
+                  isLeader = info?.isLeader;
+                  selectedOttIndex = info?.selectedOtt;
+                });
+              });
+            }
+          });
+        });
+      }
     }
   }
 
@@ -48,7 +70,6 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   Future<UserInfo?> getUserInfo() async {
     int? id = await LoginStorage.getUserId();
 
-    // waitingUser에 해당 user가 있는지 확인
     final response = await http.get(
       Uri.parse('http://${Localhost.ip}:8080/api/users/${id}/modification'),
       headers: {"Content-Type": "application/json"},
@@ -57,6 +78,26 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     if (response.statusCode == 200) {
       UserInfo userInfo = UserInfo.fromJson(jsonDecode(response.body));
       return userInfo;
+    } else {
+      print("userInfo 가져오기 실패");
+      return null;
+    }
+  }
+
+  Future<InfoOfLeaderAndOtt?> getOttAndRole(String address) async {
+    int? id = await LoginStorage.getUserId();
+
+
+    final response = await http.get(
+      Uri.parse('http://${Localhost.ip}:8080/api/${address}/${id}/roleAndOtt'),
+      headers: {"Content-Type": "application/json"},
+    );
+
+
+    if (response.statusCode == 200) {
+      var jsonBody = jsonDecode(response.body);
+      InfoOfLeaderAndOtt info = InfoOfLeaderAndOtt.fromJson(jsonBody);
+      return info;
     } else {
       print("userInfo 가져오기 실패");
       return null;
@@ -138,6 +179,13 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
                     setState(() {
                       userInfo = value;
                       isShareRoom = userInfo?.isShareRoom;
+                      getOttAndRole("sharingUser").then((value) {
+                        InfoOfLeaderAndOtt? info = value;
+                        setState(() {
+                          isLeader = info?.isLeader;
+                          selectedOttIndex = info?.selectedOtt;
+                        });
+                      });
                       print("userinfo value = ${value}");
                     });
                   });
@@ -342,8 +390,8 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
                 extra: userInfo)
             .then((result) {
           setState(() {
-            selectedOttIndex = null;
-            isLeader = null;
+            // selectedOttIndex = null;
+            // isLeader = null;
             isStartMatching = true;
           });
           getUserInfo().then((value) {
@@ -438,6 +486,8 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     if (response.statusCode == 200) {
       setState(() {
         isStartMatching = false;
+        selectedOttIndex = null;
+        isLeader = null;
       });
       print("자동 매칭 취소 완료");
       context.pop();

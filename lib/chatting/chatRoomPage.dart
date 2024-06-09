@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:ott_share/chatting/message.dart';
 import 'package:ott_share/chatting/messageRequest.dart';
+import 'package:ott_share/models/bankType.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 import '../models/localhost.dart';
@@ -33,6 +34,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   List<Message> messages = [];
 
   late List<bool> isCheckboxDisabled;
+  late String ottPrice;
 
 
   @override
@@ -47,6 +49,18 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     }
     notLeaderList.addAll(widget.chatRoom.readers.where((reader) => reader.chatMemberId != leader?.chatMemberId).toList());
     nonLeaderCount = notLeaderList.length;
+
+    switch (chatRoom.ottType) {
+      case "NETFLIX":
+        ottPrice = "9,000원";
+        break;
+      case "TVING":
+        ottPrice = "4,250원";
+        break;
+      case "WAVVE":
+        ottPrice = "3,475원";
+        break;
+    }
   }
 
 
@@ -601,7 +615,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.zero, // 모든 모서리를 각지게 설정합니다.
             ),
-            width: MediaQuery.of(context).size.width * 0.75,
+            width: MediaQuery.of(context).size.width * 0.8,
             backgroundColor: Colors.white,
             child: Container(
               width: MediaQuery.of(context).size.width * 0.75,
@@ -613,7 +627,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                           decoration: BoxDecoration(
                               color: Colors.black87,
                             borderRadius: BorderRadius.circular(10)
@@ -630,23 +644,74 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       ],
                     ),
                   ),
-                  SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Container(
-                          height: 45,
-                          width: 40,
-                          child: Text("계좌번호", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
-                      ),
-                      SizedBox(width: 10),
-                      Container(
-                        width: 50,
-                          child: Text("${leader?.userInfo.account}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
-                      )
-                    ],
+                  SizedBox(height: 5),
+                  Container(
+                    width: 240,
+                    padding: EdgeInsets.fromLTRB(8, 5, 20, 5),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          alignment: Alignment.centerLeft,
+                          height: 25,
+                          width: 200,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text("은행", style: TextStyle(fontSize: 17)),
+                              SizedBox(width: 45),
+                              Text("${leader?.userInfo.bank.name}", style: TextStyle(fontSize: 16))
+                            ],
+                          ),
+                        ),
+                        Container(
+                          alignment: Alignment.centerLeft,
+                          height: 25,
+                          width: 200,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text("계좌번호", style: TextStyle(fontSize: 17)),
+                              SizedBox(width: 15),
+                              Text("${leader?.userInfo.account}", style: TextStyle(fontSize: 16))
+                            ],
+                          ),
+                        ),
+                        Container(
+                          alignment: Alignment.centerLeft,
+                          height: 25,
+                          width: 200,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text("예금주", style: TextStyle(fontSize: 17)),
+                              SizedBox(width: 30),
+                              Text("${leader?.userInfo.accountHolder}", style: TextStyle(fontSize: 16))
+                            ],
+                          ),
+                        ),
+                        Container(
+                          alignment: Alignment.centerLeft,
+                          height: 25,
+                          width: 200,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text("요금", style: TextStyle(fontSize: 17)),
+                              SizedBox(width: 45),
+                              Text("${ottPrice}", style: TextStyle(fontSize: 16,))
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  SizedBox(height: 5),
                   Divider(),
-                  SizedBox(height: 30),
+                  SizedBox(height: 20),
                   Container(
                       height: 45,
                       child: Text("요금 납부", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
