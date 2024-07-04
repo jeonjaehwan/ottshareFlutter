@@ -49,7 +49,7 @@ class _FindIdAndPasswordPageState extends State<FindIdAndPasswordPage>
    * 인증번호 전송
    */
   Future<void> _sendVerificationCode(BuildContext context) async {
-    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/send';
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/send-verification-code';
 
     String name = _nameController.text;
     String phoneNumber = _phoneNumberController.text;

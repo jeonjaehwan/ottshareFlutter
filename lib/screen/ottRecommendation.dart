@@ -120,7 +120,7 @@ class _StartPageState extends State<StartPage> {
                     onPressed: () async {
                       if (pageCount == 1) {
                         buttonText = '다음';
-                        OttQuestionInfo? questionInfo = await sendGetQuestionRequest(pageCount);
+                        OttQuestionInfo? questionInfo = await sendGetFirstQuestionRequest();
                         print("첫번째 질문 정보 : ${questionInfo?.toJson()}");
                         beforeResponseBody = questionInfo;
                         setState(() => body = FirstQuestionPage(
@@ -225,6 +225,36 @@ class _StartPageState extends State<StartPage> {
     );
   }
 
+  Future<OttQuestionInfo?> sendGetFirstQuestionRequest() async {
+
+    try {
+
+      final response = await http.get(
+        Uri.parse('http://${Localhost.ip}:8080/api/ottRecQuestions/first'),
+        headers: {
+          'Accept-Encoding': 'utf-8',
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // 성공 처리
+        final questionInfoJson = jsonDecode(response.body);
+        OttQuestionInfo responseBody = OttQuestionInfo.fromJson(questionInfoJson);
+        print('Success response: ${responseBody}'); // 성공 응답 본문 출력
+
+        return responseBody;
+      } else {
+        // 실패 처리
+        print('Failure response: ${response.body}'); // 실패 응답 본문 출력
+        return null;
+      }
+    } catch(error) {
+      print('catch Failure response: ${error}');
+    }
+
+  }
+
   Future<OttQuestionInfo?> sendGetQuestionRequest(int pageCount) async {
 
     try {
@@ -263,7 +293,7 @@ class _StartPageState extends State<StartPage> {
     print(requestMap);
 
     await http.post(
-      Uri.parse('http://${Localhost.ip}:8080/api/ottRecQuestions/${pageCount}'),
+      Uri.parse('http://${Localhost.ip}:8080/api/ottRecQuestions/${pageCount}/score'),
       headers: {
         "Content-Encoding": "utf-8",
         "Content-Type": "application/json"
@@ -276,7 +306,7 @@ class _StartPageState extends State<StartPage> {
 
   Future<String?> sendGetResultRequest() async {
     final response = await http.get(
-      Uri.parse('http://${Localhost.ip}:8080/api/ottRecQuestions/10'),
+      Uri.parse('http://${Localhost.ip}:8080/api/ottRecQuestions/result'),
       headers: {"Content-Encoding": "utf-8"},
     );
 

@@ -149,7 +149,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   Future<void> sendCheckRequest(int userId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://${Localhost.ip}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${userId}/check'),
+        Uri.parse('http://${Localhost.ip}:8080/api/ottShareRooms/${chatRoom.chatRoomId}/users/${userId}/check'),
         headers: {"Content-Type": "application/json"},
       );
 
@@ -823,7 +823,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   Future<void> kickMember(BuildContext context, int chatMemberId) async {
     print("방이랑 회원 정보 = ${chatMemberId} + ${chatRoom.chatRoomId}");
     
-    final String apiUrl = 'http://${Localhost.ip}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${chatMemberId}/kick';
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/ottShareRooms/${chatRoom.chatRoomId}/users/${chatMemberId}';
 
     final response = await http.delete(
       Uri.parse(apiUrl),
@@ -875,7 +875,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Future<void> renewChatRoom() async{
     var url = Uri.parse(
-        'http://${Localhost.ip}:8080/api/ottShareRoom/${writer.userInfo.userId}');
+        'http://${Localhost.ip}:8080/api/ottShareRooms/${writer.userInfo.userId}');
     var response =
     await http.get(url, headers: {"Content-Type": "application/json"});
     Map<String, dynamic> json = jsonDecode(response.body);
@@ -887,7 +887,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Future<void> exitRoom(BuildContext context) async {
 
-    final String apiUrl = 'http://${Localhost.ip}:8080/api/ottShareRoom/${chatRoom.chatRoomId}/user/${writer.chatMemberId}/leave';
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/ottShareRooms/${chatRoom.chatRoomId}/users/${writer.chatMemberId}/leave';
 
     final response = await http.delete(
       Uri.parse(apiUrl),

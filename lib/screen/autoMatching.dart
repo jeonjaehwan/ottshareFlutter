@@ -38,7 +38,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
       print('user info = ${widget.userInfo}');
       // sharing룸이 있으면 ott랑 역할 가져와야 함.
       if (isShareRoom == true) {
-        getOttAndRole("sharingUser").then((value) {
+        getOttAndRole("sharingUsers").then((value) {
           InfoOfLeaderAndOtt? info = value;
           setState(() {
             isLeader = info?.isLeader;
@@ -52,7 +52,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
             isStartMatching = value;
             if (value == true) {
               // 서버에서 ott랑 역할 가져와야 함.
-              getOttAndRole("waitingUser").then((value) {
+              getOttAndRole("waitingUsers").then((value) {
                 InfoOfLeaderAndOtt? info = value;
                 setState(() {
                   isLeader = info?.isLeader;
@@ -71,7 +71,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     int? id = await LoginStorage.getUserId();
 
     final response = await http.get(
-      Uri.parse('http://${Localhost.ip}:8080/api/users/${id}/modification'),
+      Uri.parse('http://${Localhost.ip}:8080/api/users/${id}/edit'),
       headers: {"Content-Type": "application/json"},
     );
 
@@ -89,7 +89,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
 
     final response = await http.get(
-      Uri.parse('http://${Localhost.ip}:8080/api/${address}/${id}/roleAndOtt'),
+      Uri.parse('http://${Localhost.ip}:8080/api/${address}/${id}/role-and-ott'),
       headers: {"Content-Type": "application/json"},
     );
 
@@ -110,7 +110,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
     // waitingUser에 해당 user가 있는지 확인
     final response = await http.get(
-      Uri.parse('http://${Localhost.ip}:8080/api/waitingUser/${id}'),
+      Uri.parse('http://${Localhost.ip}:8080/api/waitingUsers/${id}'),
       // headers: {"Content-Type": "application/json"},
     );
 
@@ -160,7 +160,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
     var body = jsonEncode(requestMap);
 
     final response = await http.post(
-      Uri.parse('http://${Localhost.ip}:8080/api/waitingUser/save'),
+      Uri.parse('http://${Localhost.ip}:8080/api/waitingUsers/save'),
       headers: {"Content-Type": "application/json"},
       body: body,
     );
@@ -179,7 +179,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
                     setState(() {
                       userInfo = value;
                       isShareRoom = userInfo?.isShareRoom;
-                      getOttAndRole("sharingUser").then((value) {
+                      getOttAndRole("sharingUsers").then((value) {
                         InfoOfLeaderAndOtt? info = value;
                         setState(() {
                           isLeader = info?.isLeader;
@@ -225,7 +225,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
 
     try {
       var url = Uri.parse(
-          'http://${Localhost.ip}:8080/api/ottShareRoom/${userInfo!.userId}');
+          'http://${Localhost.ip}:8080/api/ottShareRooms/${userInfo!.userId}');
       var response =
           await http.get(url, headers: {"Content-Type": "application/json"});
       Map<String, dynamic> json = jsonDecode(response.body);
@@ -470,7 +470,7 @@ class _AutoMatchingPageState extends State<AutoMatchingPage> {
   }
 
   Future<void> cancelAutoMatching(BuildContext context) async {
-    final String apiUrl = 'http://${Localhost.ip}:8080/api/waitingUser/matchings/${waitingUserid}';
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/waitingUsers/${waitingUserid}';
 
     final response = await http.delete(
       Uri.parse(apiUrl),
