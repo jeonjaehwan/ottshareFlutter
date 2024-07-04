@@ -67,7 +67,7 @@ class _OTTInfoPageState extends State<OTTInfoPage> {
 
     // 서버로 POST 요청 보내기
     final response = await http.post(
-      Uri.parse('http://${Localhost.ip}:8080/api/waitingUser/save'),
+      Uri.parse('http://${Localhost.ip}:8080/api/waitingUsers'),
       headers: {"Content-Type": "application/json"},
       body: requestBodyJson,
     );

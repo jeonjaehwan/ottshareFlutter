@@ -45,7 +45,7 @@ class _SignupPageState extends State<SignUpPage> {
 
 
   Future<void> _registerUser(BuildContext context) async {
-    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/join';
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/users';
 
     String name = _nameController.text;
     String username = _usernameController.text;

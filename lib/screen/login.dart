@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -39,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login(BuildContext context) async {
 
-    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/loginProc';
+    final String apiUrl = 'http://${Localhost.ip}:8080/api/users/login';
 
     String username = _usernameController.text;
     String password = _passwordController.text;
@@ -292,6 +293,9 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _loginWithGoogle(BuildContext context) async {
     final user = await GoogleSignInApi.login();
+
+    final _googleSignIn = GoogleSignIn();
+    _googleSignIn.isSignedIn();
 
     if (user == null) {
       ScaffoldMessenger.of(context)

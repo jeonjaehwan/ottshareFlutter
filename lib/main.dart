@@ -28,48 +28,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 
-// Future<void> backgroundHandler(RemoteMessage message) async {
-//   debugPrint('fcm backgroundHandler, message');
-//
-//   debugPrint(message.notification?.title ?? '');
-//   debugPrint(message.notification?.body ?? '');
-// }
-
-// Future<void> setFCM() async {
-//
-//   //백그라운드 메세지 핸들링(수신처리)
-//   FirebaseMessaging.onBackgroundMessage(backgroundHandler);
-// }
-//
-// void initializeNotification() async {
-//   final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-//
-//   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-//     'high_importance_channel', // id
-//     'High Importance Notifications', // name
-//     importance: Importance.high,
-//     description: 'This channel is used for important notifications.',
-//   );
-//
-//   await flutterLocalNotificationsPlugin
-//       .resolvePlatformSpecificImplementation<
-//       AndroidFlutterLocalNotificationsPlugin>()
-//       ?.createNotificationChannel(channel);
-//
-//   await flutterLocalNotificationsPlugin.initialize(
-//     const InitializationSettings(
-//       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-//     ),
-//   );
-//
-//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-//
-//   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-//     alert: true,
-//     badge: true,
-//     sound: true,
-//   );
-// }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,7 +38,6 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // initializeNotification();
   await LoginStorage.init();
   runApp(MyApp());
 }
@@ -203,39 +160,9 @@ class _HomePageState extends State<HomePage> {
       : _selectedIndex = selectedIndex ?? 0;
 
 
-  // var messageString = "";
-  // void getMyDeviceToken() async {
-  //   final token = await FirebaseMessaging.instance.getToken();
-  //   print("내 디바이스 토큰: $token");
-  // }
-
 
   @override
   void initState() {
-    // getMyDeviceToken();
-    // FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-    //   RemoteNotification? notification = message.notification;
-    //
-    //   if (notification != null) {
-    //     FlutterLocalNotificationsPlugin().show(
-    //       notification.hashCode,
-    //       notification.title,
-    //       notification.body,
-    //       const NotificationDetails(
-    //
-    //         android: AndroidNotificationDetails(
-    //           'high_importance_channel',
-    //           'high_importance_notification',
-    //           importance: Importance.max,
-    //         ),
-    //       ),
-    //     );
-    //     setState(() {
-    //       messageString = message.notification!.body!;
-    //       print("Foreground 메시지 수신: $messageString");
-    //     });
-    //   }
-    // });
     super.initState();
     userInfo = widget.userInfo; // null일 수 있음
     isLoggedIn = widget.isLoggedIn ?? false;
